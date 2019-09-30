@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["FUSE_NOTIFY_CODE_MAX",""]],"enum":[["NotifyCode",""]],"struct":[["DeleteOut",""],["InvalEntryOut",""],["InvalInodeOut",""],["PollWakeupOut",""],["RetrieveIn",""],["RetrieveOut",""],["StoreOut",""]]});
