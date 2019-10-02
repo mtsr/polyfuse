@@ -1,1 +1,0 @@
-initSidebarItems({"trait":[["UnsafeUnpin","A trait used for custom implementations of [`Unpin`]. This trait is used in conjunction with the `UnsafeUnpin` argument to [`pin_project`]"]]});

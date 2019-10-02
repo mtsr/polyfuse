@@ -12,30 +12,32 @@ targets, <a href="fn.set_logger_racy.html"><code>set_logger_racy</code></a> will
 <h1 id="errors" class="section-header"><a href="#errors">Errors</a></h1>
 <p>An error is returned if a logger has already been set.</p>
 <h1 id="examples" class="section-header"><a href="#examples">Examples</a></h1>
-<div class='information'><div class='tooltip edition'>ⓘ<span class='tooltiptext'>This code runs with edition 2018</span></div></div><div class="example-wrap"><pre class="rust rust-example-rendered edition ">
-<span class="kw">use</span> <span class="ident">log</span>::{<span class="ident">error</span>, <span class="ident">info</span>, <span class="ident">warn</span>, <span class="ident">Record</span>, <span class="ident">Level</span>, <span class="ident">Metadata</span>, <span class="ident">LevelFilter</span>};
+<pre><code class="language-edition2018">use log::{error, info, warn, Record, Level, Metadata, LevelFilter};
 
-<span class="kw">static</span> <span class="ident">MY_LOGGER</span>: <span class="ident">MyLogger</span> <span class="op">=</span> <span class="ident">MyLogger</span>;
+static MY_LOGGER: MyLogger = MyLogger;
 
-<span class="kw">struct</span> <span class="ident">MyLogger</span>;
+struct MyLogger;
 
-<span class="kw">impl</span> <span class="ident">log</span>::<span class="ident">Log</span> <span class="kw">for</span> <span class="ident">MyLogger</span> {
-    <span class="kw">fn</span> <span class="ident">enabled</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">metadata</span>: <span class="kw-2">&amp;</span><span class="ident">Metadata</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
-        <span class="ident">metadata</span>.<span class="ident">level</span>() <span class="op">&lt;</span><span class="op">=</span> <span class="ident">Level</span>::<span class="ident">Info</span>
+impl log::Log for MyLogger {
+    fn enabled(&amp;self, metadata: &amp;Metadata) -&gt; bool {
+        metadata.level() &lt;= Level::Info
     }
 
-    <span class="kw">fn</span> <span class="ident">log</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">record</span>: <span class="kw-2">&amp;</span><span class="ident">Record</span>) {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">enabled</span>(<span class="ident">record</span>.<span class="ident">metadata</span>()) {
-            <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;{} - {}&quot;</span>, <span class="ident">record</span>.<span class="ident">level</span>(), <span class="ident">record</span>.<span class="ident">args</span>());
+    fn log(&amp;self, record: &amp;Record) {
+        if self.enabled(record.metadata()) {
+            println!(&quot;{} - {}&quot;, record.level(), record.args());
         }
     }
-    <span class="kw">fn</span> <span class="ident">flush</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {}
+    fn flush(&amp;self) {}
 }
 
-<span class="ident">log</span>::<span class="ident">set_logger</span>(<span class="kw-2">&amp;</span><span class="ident">MY_LOGGER</span>).<span class="ident">unwrap</span>();
-<span class="ident">log</span>::<span class="ident">set_max_level</span>(<span class="ident">LevelFilter</span>::<span class="ident">Info</span>);
+# fn main(){
+log::set_logger(&amp;MY_LOGGER).unwrap();
+log::set_max_level(LevelFilter::Info);
 
-<span class="macro">info</span><span class="macro">!</span>(<span class="string">&quot;hello log&quot;</span>);
-<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;warning&quot;</span>);
-<span class="macro">error</span><span class="macro">!</span>(<span class="string">&quot;oops&quot;</span>);</pre></div>
+info!(&quot;hello log&quot;);
+warn!(&quot;warning&quot;);
+error!(&quot;oops&quot;);
+# }
+</code></pre>
 </div></section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p></div></div></aside><script>window.rootPath = "../";window.currentCrate = "log";</script><script src="../aliases.js"></script><script src="../main.js"></script><script defer src="../search-index.js"></script></body></html>

@@ -1,1 +1,0 @@
-initSidebarItems({"attr":[["pin_project","An attribute that creates a projection struct covering all the fields."],["pinned_drop","An attribute for annotating an impl block that implements [`Drop`]."]]});

@@ -41,9 +41,9 @@ readable or is closed.</p>
 </div></div><span class='loading-content'>Loading content...</span>
             <h2 id='provided-methods' class='small-section-header'>Provided methods<a href='#provided-methods' class='anchor'></a></h2><div class='methods'><h3 id='method.prepare_uninitialized_buffer' class='method'><code id='prepare_uninitialized_buffer.v'>unsafe fn <a href='#method.prepare_uninitialized_buffer' class='fnname'>prepare_uninitialized_buffer</a>(&amp;self, buf: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;mut [</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></code></h3><div class='docblock'><p>Prepares an uninitialized buffer to be safe to pass to <code>read</code>. Returns
 <code>true</code> if the supplied buffer was zeroed out.</p>
-<p>While it would be highly unusual, implementations of <a href="https://doc.rust-lang.org/nightly/std/io/trait.Read.html"><code>io::Read</code></a> are
+<p>While it would be highly unusual, implementations of <a href="std::io::Read"><code>io::Read</code></a> are
 able to read data from the buffer passed as an argument. Because of
-this, the buffer passed to <a href="https://doc.rust-lang.org/nightly/std/io/trait.Read.html"><code>io::Read</code></a> must be initialized memory. In
+this, the buffer passed to <a href="std::io::Read"><code>io::Read</code></a> must be initialized memory. In
 situations where large numbers of buffers are used, constantly having to
 zero out buffers can be expensive.</p>
 <p>This function does any necessary work to prepare an uninitialized buffer

@@ -4,7 +4,7 @@
 <p>This abstracts over all kinds of caches that can provide a cheap access to values of type <code>T</code>.
 This is useful in cases where some code doesn't care if the <code>T</code> is the whole structure or just
 a part of it.</p>
-<p>See the example at <a href="../../arc_swap/cache/struct.Cache.html#method.map" title="`Cache::map`"><code>Cache::map</code></a>.</p>
+<p>See the example at [<code>Cache::map</code>].</p>
 </div>
             <h2 id='required-methods' class='small-section-header'>Required methods<a href='#required-methods' class='anchor'></a></h2><div class='methods'><h3 id='tymethod.load' class='method'><code id='load.v'>fn <a href='#tymethod.load' class='fnname'>load</a>(&amp;mut self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>T</code></h3><div class='docblock'><p>Loads the value from cache.</p>
 <p>This revalidates the value in the cache, then provides the access to the cached value.</p>

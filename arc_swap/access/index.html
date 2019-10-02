@@ -5,26 +5,26 @@ configuration, but for reasons of code separation and reusability, it is not des
 the whole configuration to each of the parts.</p>
 <p>This module provides means to grant the parts access to the relevant subsets of such global
 data structure while masking the fact it is part of the bigger whole from the component.</p>
-<p>Note that the <a href="../../arc_swap/cache/index.html" title="::cache"><code>cache</code></a> module has its own <a href="../../arc_swap/cache/trait.Access.html" title="::cache::Access"><code>Access</code></a> trait that
+<p>Note that the [<code>cache</code>][::cache] module has its own [<code>Access</code>][::cache::Access] trait that
 serves a similar purpose, but with cached access. The signatures are different, therefore an
 incompatible trait.</p>
 <h1 id="the-general-idea" class="section-header"><a href="#the-general-idea">The general idea</a></h1>
-<p>Each part of the code accepts generic <a href="../../arc_swap/access/trait.Access.html" title="Access"><code>Access&lt;T&gt;</code></a> for the <code>T</code> of its interest. This
+<p>Each part of the code accepts generic [<code>Access&lt;T&gt;</code>][Access] for the <code>T</code> of its interest. This
 provides means to load current version of the structure behind the scenes and get only the
 relevant part, without knowing what the big structure is.</p>
-<p>For technical reasons, the <a href="../../arc_swap/access/trait.Access.html" title="`Access`"><code>Access</code></a> trait is not object safe. If type erasure is desired, it
-is possible use the <a href="../../arc_swap/access/trait.DynAccess.html" title="::access::DynAccess"><code>DynAccess</code></a> instead, which is object safe, but
+<p>For technical reasons, the [<code>Access</code>] trait is not object safe. If type erasure is desired, it
+is possible use the [<code>DynAccess</code>][::access::DynAccess] instead, which is object safe, but
 slightly slower.</p>
-<p>For some cases, it is possible to use <a href="../../arc_swap/struct.ArcSwapAny.html#method.map" title="`ArcSwapAny::map`"><code>ArcSwapAny::map</code></a>. If that is not flexible enough, the
-<a href="../../arc_swap/access/struct.Map.html" title="`Map`"><code>Map</code></a> type can be created directly.</p>
-<p>Note that the <a href="../../arc_swap/access/trait.Access.html" title="`Access`"><code>Access</code></a> trait is also implemented for <a href="../../arc_swap/struct.ArcSwapAny.html" title="`ArcSwapAny`"><code>ArcSwapAny</code></a> itself. Additionally,
-there's the <a href="../../arc_swap/access/struct.Constant.html" title="::access::Constant"><code>Constant</code></a> helper type, which is useful mostly for testing
+<p>For some cases, it is possible to use [<code>ArcSwapAny::map</code>]. If that is not flexible enough, the
+[<code>Map</code>] type can be created directly.</p>
+<p>Note that the [<code>Access</code>] trait is also implemented for [<code>ArcSwapAny</code>] itself. Additionally,
+there's the [<code>Constant</code>][::access::Constant] helper type, which is useful mostly for testing
 (it doesn't allow reloading).</p>
 <h1 id="performance" class="section-header"><a href="#performance">Performance</a></h1>
-<p>In general, these utilities use <a href="../../arc_swap/struct.ArcSwapAny.html#method.load" title="`ArcSwapAny::load`"><code>ArcSwapAny::load</code></a> internally and then apply the provided
+<p>In general, these utilities use [<code>ArcSwapAny::load</code>] internally and then apply the provided
 transformation. This has several consequences:</p>
 <ul>
-<li>Limitations of the <a href="../../arc_swap/struct.ArcSwapAny.html#method.load" title="ArcSwapAny::load"><code>load</code></a> apply ‒ including the recommendation to not
+<li>Limitations of the [<code>load</code>][ArcSwapAny::load] apply ‒ including the recommendation to not
 hold the returned guard object for too long, but long enough to get consistency.</li>
 <li>The transformation should be cheap ‒ optimally just borrowing into the structure.</li>
 </ul>
@@ -77,5 +77,5 @@ hold the returned guard object for too long, but long enough to get consistency.
 </td></tr><tr class='module-item'><td><a class="struct" href="struct.MapGuard.html" title='arc_swap::access::MapGuard struct'>MapGuard</a></td><td class='docblock-short'><p>A plumbing type.</p>
 </td></tr></table><h2 id='traits' class='section-header'><a href="#traits">Traits</a></h2>
 <table><tr class='module-item'><td><a class="trait" href="trait.Access.html" title='arc_swap::access::Access trait'>Access</a></td><td class='docblock-short'><p>Abstracts over ways code can get access to a value of type <code>T</code>.</p>
-</td></tr><tr class='module-item'><td><a class="trait" href="trait.DynAccess.html" title='arc_swap::access::DynAccess trait'>DynAccess</a></td><td class='docblock-short'><p>An object-safe version of the <a href="../../arc_swap/access/trait.Access.html" title="`Access`"><code>Access</code></a> trait.</p>
+</td></tr><tr class='module-item'><td><a class="trait" href="trait.DynAccess.html" title='arc_swap::access::DynAccess trait'>DynAccess</a></td><td class='docblock-short'><p>An object-safe version of the [<code>Access</code>] trait.</p>
 </td></tr></table></section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p></div></div></aside><script>window.rootPath = "../../";window.currentCrate = "arc_swap";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script defer src="../../search-index.js"></script></body></html>

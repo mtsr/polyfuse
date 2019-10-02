@@ -9,24 +9,25 @@ and target.</p>
 <p>Users should use the <code>log_enabled!</code> macro in their code to avoid
 constructing expensive log messages.</p>
 <h1 id="examples" class="section-header"><a href="#examples">Examples</a></h1>
-<div class='information'><div class='tooltip edition'>ⓘ<span class='tooltiptext'>This code runs with edition 2018</span></div></div><div class="example-wrap"><pre class="rust rust-example-rendered edition ">
-<span class="kw">use</span> <span class="ident">log</span>::{<span class="ident">Record</span>, <span class="ident">Level</span>, <span class="ident">Metadata</span>};
+<pre><code class="language-edition2018">use log::{Record, Level, Metadata};
 
-<span class="kw">struct</span> <span class="ident">MyLogger</span>;
+struct MyLogger;
 
-<span class="kw">impl</span> <span class="ident">log</span>::<span class="ident">Log</span> <span class="kw">for</span> <span class="ident">MyLogger</span> {
-    <span class="kw">fn</span> <span class="ident">enabled</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">metadata</span>: <span class="kw-2">&amp;</span><span class="ident">Metadata</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
-        <span class="ident">metadata</span>.<span class="ident">level</span>() <span class="op">&lt;</span><span class="op">=</span> <span class="ident">Level</span>::<span class="ident">Info</span>
+impl log::Log for MyLogger {
+    fn enabled(&amp;self, metadata: &amp;Metadata) -&gt; bool {
+        metadata.level() &lt;= Level::Info
     }
 
-    <span class="kw">fn</span> <span class="ident">log</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">record</span>: <span class="kw-2">&amp;</span><span class="ident">Record</span>) {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">enabled</span>(<span class="ident">record</span>.<span class="ident">metadata</span>()) {
-            <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;{} - {}&quot;</span>, <span class="ident">record</span>.<span class="ident">level</span>(), <span class="ident">record</span>.<span class="ident">args</span>());
+    fn log(&amp;self, record: &amp;Record) {
+        if self.enabled(record.metadata()) {
+            println!(&quot;{} - {}&quot;, record.level(), record.args());
         }
     }
-    <span class="kw">fn</span> <span class="ident">flush</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {}
+    fn flush(&amp;self) {}
 }
-</pre></div>
+
+# fn main(){}
+</code></pre>
 </div><h2 id='methods' class='small-section-header'>Methods<a href='#methods' class='anchor'></a></h2><h3 id='impl' class='impl'><code class='in-band'>impl&lt;'a&gt; <a class="struct" href="../log/struct.Metadata.html" title="struct log::Metadata">Metadata</a>&lt;'a&gt;</code><a href='#impl' class='anchor'></a><a class='srclink' href='../src/log/lib.rs.html#1061-1079' title='goto source code'>[src]</a></h3><div class='impl-items'><h4 id='method.builder' class="method"><code id='builder.v'>pub fn <a href='#method.builder' class='fnname'>builder</a>() -&gt; <a class="struct" href="../log/struct.MetadataBuilder.html" title="struct log::MetadataBuilder">MetadataBuilder</a>&lt;'a&gt;</code><a class='srclink' href='../src/log/lib.rs.html#1064-1066' title='goto source code'>[src]</a></h4><div class='docblock'><p>Returns a new builder.</p>
 </div><h4 id='method.level' class="method"><code id='level.v'>pub fn <a href='#method.level' class='fnname'>level</a>(&amp;self) -&gt; <a class="enum" href="../log/enum.Level.html" title="enum log::Level">Level</a></code><a class='srclink' href='../src/log/lib.rs.html#1070-1072' title='goto source code'>[src]</a></h4><div class='docblock'><p>The verbosity level of the message.</p>
 </div><h4 id='method.target' class="method"><code id='target.v'>pub fn <a href='#method.target' class='fnname'>target</a>(&amp;self) -&gt; &amp;'a str</code><a class='srclink' href='../src/log/lib.rs.html#1076-1078' title='goto source code'>[src]</a></h4><div class='docblock'><p>The name of the target of the directive.</p>

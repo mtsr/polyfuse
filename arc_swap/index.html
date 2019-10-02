@@ -3,7 +3,7 @@
 directly) and several type aliases that set it up for common use cases:</p>
 <ul>
 <li><a href="type.ArcSwap.html"><code>ArcSwap</code></a>, which operates on <a href="https://doc.rust-lang.org/std/sync/struct.Arc.html"><code>Arc&lt;T&gt;</code></a>.</li>
-<li><a href="../arc_swap/type.ArcSwapOption.html" title="ArcSwapOption"><code>ArcSwapOption</code></a>, which operates on <code>Option&lt;Arc&lt;T&gt;&gt;</code>.</li>
+<li>[<code>ArcSwapOption</code>][ArcSwapOption], which operates on <code>Option&lt;Arc&lt;T&gt;&gt;</code>.</li>
 <li><a href="type.IndependentArcSwap.html"><code>IndependentArcSwap</code></a>, which uses slightly different trade-off decisions
 ‒ see below.</li>
 </ul>
@@ -64,16 +64,16 @@ but even AMD vs. Intel or two different Intel processors. Therefore, if what mat
 the speed than the wait-free guarantees, you're advised to do your own measurements.</p>
 <p>However, the intended selling point of the library is consistency in the performance, not
 outperforming other locking primitives in average. If you do worry about the raw performance,
-you can have a look at <a href="../arc_swap/cache/struct.Cache.html" title="Cache"><code>Cache</code></a>.</p>
+you can have a look at [<code>Cache</code>][Cache].</p>
 <h2 id="choosing-the-right-reading-operation" class="section-header"><a href="#choosing-the-right-reading-operation">Choosing the right reading operation</a></h2>
 <p>There are several load operations available. While the general go-to one should be
 <a href="struct.ArcSwapAny.html#method.load"><code>load</code></a>, there may be situations in which the others are a better match.</p>
-<p>The <a href="struct.ArcSwapAny.html#method.load"><code>load</code></a> usually only borrows the instance from the shared <a href="../arc_swap/struct.ArcSwapAny.html" title="`ArcSwapAny`"><code>ArcSwapAny</code></a>. This makes
+<p>The <a href="struct.ArcSwapAny.html#method.load"><code>load</code></a> usually only borrows the instance from the shared [<code>ArcSwapAny</code>]. This makes
 it faster, because different threads don't contend on the reference count. There are two
 situations when this borrow isn't possible. If the content of <code>ArcSwapAny</code> gets changed, all
-existing <a href="../arc_swap/struct.Guard.html" title="Guard"><code>Guard</code></a>s are promoted to contain an owned instance.</p>
+existing [<code>Guard</code>][Guard]s are promoted to contain an owned instance.</p>
 <p>The other situation derives from internal implementation. The number of borrows each thread can
-have at each time (across all <a href="../arc_swap/struct.Guard.html" title="Guard"><code>Guard</code></a>s) is limited. If this limit is exceeded, an
+have at each time (across all [<code>Guard</code>][Guard]s) is limited. If this limit is exceeded, an
 onwed instance is created instead.</p>
 <p>Therefore, if you intend to hold onto the loaded value for extended time span, you may prefer
 <a href="struct.ArcSwapAny.html#method.load_full"><code>load_full</code></a>. It loads the pointer instance (<code>Arc</code>) without borrowing, which is
@@ -84,7 +84,7 @@ convenient.</p>
 <p>There's also <a href="struct.ArcSwapAny.html#method.peek_signal_safe"><code>load_signal_safe</code></a>. This is the only method guaranteed to be
 safely usable inside a unix signal handler. It has no advantages outside of them, so it makes
 it kind of niche one.</p>
-<p>Additionally, it is possible to use a <a href="../arc_swap/cache/struct.Cache.html" title="Cache"><code>Cache</code></a> to get further speed improvement at the
+<p>Additionally, it is possible to use a [<code>Cache</code>][Cache] to get further speed improvement at the
 cost of less comfortable API and possibly keeping the older values alive for longer than
 necessary.</p>
 <h1 id="atomic-orderings" class="section-header"><a href="#atomic-orderings">Atomic orderings</a></h1>
@@ -164,7 +164,7 @@ stabilize before stabilizing it in this crate).</p>
 </div><h2 id='reexports' class='section-header'><a href="#reexports">Re-exports</a></h2>
 <table><tr><td><code>pub use cache::<a class="struct" href="../arc_swap/cache/struct.Cache.html" title="struct arc_swap::cache::Cache">Cache</a>;</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
 <table><tr class='module-item'><td><a class="mod" href="access/index.html" title='arc_swap::access mod'>access</a></td><td class='docblock-short'><p>Abstracting over accessing parts of stored value.</p>
-</td></tr><tr class='module-item'><td><a class="mod" href="cache/index.html" title='arc_swap::cache mod'>cache</a></td><td class='docblock-short'><p>Caching handle into the <a href="../arc_swap/struct.ArcSwapAny.html" title="ArcSwapAny">ArcSwapAny</a>.</p>
+</td></tr><tr class='module-item'><td><a class="mod" href="cache/index.html" title='arc_swap::cache mod'>cache</a></td><td class='docblock-short'><p>Caching handle into the [ArcSwapAny].</p>
 </td></tr><tr class='module-item'><td><a class="mod" href="gen_lock/index.html" title='arc_swap::gen_lock mod'>gen_lock</a></td><td class='docblock-short'><p>Customization of where and how the generation lock works.</p>
 </td></tr></table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
 <table><tr class='module-item'><td><a class="struct" href="struct.ArcSwapAny.html" title='arc_swap::ArcSwapAny struct'>ArcSwapAny</a></td><td class='docblock-short'><p>An atomic storage for a reference counted smart pointer like <a href="https://doc.rust-lang.org/std/sync/struct.Arc.html"><code>Arc</code></a> or <code>Option&lt;Arc&gt;</code>.</p>
