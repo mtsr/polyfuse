@@ -1,1 +1,1 @@
-initSidebarItems({"constant":[["MAX_WRITE_SIZE",""]],"mod":[["reply","Replies to the kernel."],["request","Requests from the kernel."]],"struct":[["Buffer",""],["Error",""],["Session",""]],"trait":[["Operations",""]],"type":[["Result",""]]});
+initSidebarItems({"constant":[["MAX_WRITE_SIZE",""]],"mod":[["reply","Replies to the kernel."],["request","Requests from the kernel."]],"struct":[["Buffer",""],["Session",""]],"trait":[["Operations",""]]});

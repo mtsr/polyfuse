@@ -1,6 +1,5 @@
 var ALIASES = {};
 ALIASES["arc_swap"] = {};
-ALIASES["async_trait"] = {};
 ALIASES["bitflags"] = {};
 ALIASES["byteorder"] = {};
 ALIASES["bytes"] = {};
