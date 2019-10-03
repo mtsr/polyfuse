@@ -231,8 +231,15 @@
 <span id="231">231</span>
 <span id="232">232</span>
 <span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::{
+    <span class="ident">abi</span>::<span class="ident">InitIn</span>,
     <span class="ident">buffer</span>::<span class="ident">Buffer</span>, <span class="comment">//</span>
     <span class="ident">op</span>::<span class="ident">Operations</span>,
     <span class="ident">reply</span>::{<span class="ident">ReplyInit</span>, <span class="ident">ReplyRaw</span>},
@@ -247,6 +254,10 @@
 };
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">io</span>, <span class="ident">pin</span>::<span class="ident">Pin</span>};
 
+<span class="doccomment">/// A single threaded, sequential filesystem driver.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// This session driver does *not* receive the next request from the kernel,</span>
+<span class="doccomment">/// until the processing result for the previous request has been sent.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Session</span> {
     <span class="ident">proto_major</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>,
@@ -282,6 +293,7 @@
         <span class="self">self</span>.<span class="ident">proto_minor</span>
     }
 
+    <span class="doccomment">/// Run a session with the kernel.</span>
     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tokio&quot;</span>)]</span>
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span>, <span class="ident">T</span><span class="op">&gt;</span>(
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="self">self</span>,

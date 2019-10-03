@@ -63,6 +63,8 @@
 <span id="63">63</span>
 <span id="64">64</span>
 <span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">request</span>::<span class="ident">Arg</span>;
 <span class="kw">use</span> <span class="ident">fuse_async_abi</span>::<span class="ident">InHeader</span>;
@@ -71,6 +73,7 @@
 
 <span class="kw">const</span> <span class="ident">RECV_BUF_SIZE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">MAX_WRITE_SIZE</span> <span class="op">+</span> <span class="number">4096</span>;
 
+<span class="doccomment">/// A buffer to hold request data from the kernel.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Buffer</span> {
     <span class="ident">recv_buf</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
@@ -83,6 +86,7 @@
 }
 
 <span class="kw">impl</span> <span class="ident">Buffer</span> {
+    <span class="doccomment">/// Create a new `Buffer`.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">recv_buf</span>: <span class="ident">Vec</span>::<span class="ident">with_capacity</span>(<span class="ident">RECV_BUF_SIZE</span>),
