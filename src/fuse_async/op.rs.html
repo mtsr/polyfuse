@@ -363,6 +363,29 @@
 <span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">needless_lifetimes</span>)]</span>
 
 <span class="kw">use</span> <span class="kw">crate</span>::{
+    <span class="ident">abi</span>::{
+        <span class="ident">AccessIn</span>, <span class="comment">//</span>
+        <span class="ident">BmapIn</span>,
+        <span class="ident">CreateIn</span>,
+        <span class="ident">FlushIn</span>,
+        <span class="ident">ForgetIn</span>,
+        <span class="ident">FsyncIn</span>,
+        <span class="ident">GetattrIn</span>,
+        <span class="ident">GetxattrIn</span>,
+        <span class="ident">InHeader</span>,
+        <span class="ident">InitIn</span>,
+        <span class="ident">LinkIn</span>,
+        <span class="ident">LkIn</span>,
+        <span class="ident">MkdirIn</span>,
+        <span class="ident">MknodIn</span>,
+        <span class="ident">OpenIn</span>,
+        <span class="ident">ReadIn</span>,
+        <span class="ident">ReleaseIn</span>,
+        <span class="ident">RenameIn</span>,
+        <span class="ident">SetattrIn</span>,
+        <span class="ident">SetxattrIn</span>,
+        <span class="ident">WriteIn</span>,
+    },
     <span class="ident">buffer</span>::<span class="ident">Data</span>,
     <span class="ident">reply</span>::{
         <span class="ident">ReplyAttr</span>, <span class="comment">//</span>
@@ -378,29 +401,6 @@
         <span class="ident">ReplyWrite</span>,
         <span class="ident">ReplyXattr</span>,
     },
-};
-<span class="kw">use</span> <span class="ident">fuse_async_abi</span>::{
-    <span class="ident">AccessIn</span>, <span class="comment">//</span>
-    <span class="ident">BmapIn</span>,
-    <span class="ident">CreateIn</span>,
-    <span class="ident">FlushIn</span>,
-    <span class="ident">ForgetIn</span>,
-    <span class="ident">FsyncIn</span>,
-    <span class="ident">GetattrIn</span>,
-    <span class="ident">GetxattrIn</span>,
-    <span class="ident">InHeader</span>,
-    <span class="ident">InitIn</span>,
-    <span class="ident">LinkIn</span>,
-    <span class="ident">LkIn</span>,
-    <span class="ident">MkdirIn</span>,
-    <span class="ident">MknodIn</span>,
-    <span class="ident">OpenIn</span>,
-    <span class="ident">ReadIn</span>,
-    <span class="ident">ReleaseIn</span>,
-    <span class="ident">RenameIn</span>,
-    <span class="ident">SetattrIn</span>,
-    <span class="ident">SetxattrIn</span>,
-    <span class="ident">WriteIn</span>,
 };
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">future</span>::<span class="ident">Future</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">ffi</span>::<span class="ident">OsStr</span>, <span class="ident">io</span>, <span class="ident">pin</span>::<span class="ident">Pin</span>};

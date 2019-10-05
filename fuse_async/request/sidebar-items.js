@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["Arg",""]],"fn":[["parse",""],["parse_arg",""],["parse_header",""]]});
+initSidebarItems({"enum":[["Arg",""]],"struct":[["Parser",""]],"trait":[["FromBytes",""]]});

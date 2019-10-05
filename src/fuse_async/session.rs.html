@@ -244,15 +244,18 @@
 <span id="244">244</span>
 <span id="245">245</span>
 <span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">buffer</span>::<span class="ident">Buffer</span>, <span class="comment">//</span>
+    <span class="ident">abi</span>::<span class="ident">InitOut</span>, <span class="comment">//</span>
+    <span class="ident">buffer</span>::<span class="ident">Buffer</span>,
     <span class="ident">op</span>::<span class="ident">Operations</span>,
     <span class="ident">reply</span>::{<span class="ident">ReplyInit</span>, <span class="ident">ReplyRaw</span>},
     <span class="ident">request</span>::<span class="ident">Arg</span>,
     <span class="ident">MAX_WRITE_SIZE</span>,
 };
-<span class="kw">use</span> <span class="ident">fuse_async_abi</span>::<span class="ident">InitOut</span>;
 <span class="kw">use</span> <span class="ident">futures</span>::{
     <span class="ident">future</span>::{<span class="ident">FusedFuture</span>, <span class="ident">FutureExt</span>},
     <span class="ident">io</span>::{<span class="ident">AsyncRead</span>, <span class="ident">AsyncWrite</span>},
@@ -374,10 +377,10 @@
             }
         };
 
-        <span class="kw">let</span> <span class="ident">opcode</span> <span class="op">=</span> <span class="ident">header</span>.<span class="ident">opcode</span>;
         <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(
-            <span class="string">&quot;Got a request: header={:?}, arg={:?}, data={:?}&quot;</span>,
-            <span class="ident">header</span>,
+            <span class="string">&quot;Got a request: unique={}, opcode={:?}, arg={:?}, data={:?}&quot;</span>,
+            <span class="ident">header</span>.<span class="ident">unique</span>,
+            <span class="ident">header</span>.<span class="ident">opcode</span>(),
             <span class="ident">arg</span>,
             <span class="ident">data</span>
         );
@@ -412,7 +415,10 @@
                     .<span class="kw">await</span><span class="question-mark">?</span>;
             }
             <span class="kw">_</span> <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">got_init</span> <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;ignoring an operation before init (opcode={:?})&quot;</span>, <span class="ident">opcode</span>,);
+                <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(
+                    <span class="string">&quot;ignoring an operation before init (opcode={:?})&quot;</span>,
+                    <span class="ident">header</span>.<span class="ident">opcode</span>
+                );
                 <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">EIO</span>).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
             }
@@ -483,7 +489,7 @@
             <span class="comment">// Lseek,</span>
             <span class="comment">// CopyFileRange,</span>
             <span class="ident">Arg</span>::<span class="ident">Unknown</span> <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;unsupported opcode: {:?}&quot;</span>, <span class="ident">opcode</span>);
+                <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;unsupported opcode: {:?}&quot;</span>, <span class="ident">header</span>.<span class="ident">opcode</span>);
                 <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span><span class="question-mark">?</span>;
             }
         }

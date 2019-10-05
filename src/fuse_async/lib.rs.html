@@ -16,19 +16,17 @@
 <span id="16">16</span>
 <span id="17">17</span>
 <span id="18">18</span>
-<span id="19">19</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! FUSE (Filesystem in userspace) framework for Rust.</span>
 
 <span class="attribute">#![<span class="ident">warn</span>(<span class="ident">missing_debug_implementations</span>, <span class="ident">clippy</span>::<span class="ident">unimplemented</span>)]</span>
-
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">fuse_async_abi</span> <span class="kw">as</span> <span class="ident">abi</span>;
 
 <span class="kw">mod</span> <span class="ident">buffer</span>;
 <span class="kw">mod</span> <span class="ident">op</span>;
 <span class="kw">mod</span> <span class="ident">session</span>;
 <span class="kw">mod</span> <span class="ident">tokio</span>;
 
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">abi</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">reply</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">request</span>;
 
