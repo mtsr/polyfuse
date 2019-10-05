@@ -236,6 +236,14 @@
 <span id="236">236</span>
 <span id="237">237</span>
 <span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::{
     <span class="ident">buffer</span>::<span class="ident">Buffer</span>, <span class="comment">//</span>
@@ -358,7 +366,7 @@
             <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>);
         }
 
-        <span class="kw">let</span> (<span class="ident">header</span>, <span class="ident">arg</span>) <span class="op">=</span> <span class="kw">match</span> <span class="ident">buf</span>.<span class="ident">receive</span>(<span class="ident">io</span>).<span class="kw">await</span><span class="question-mark">?</span> {
+        <span class="kw">let</span> (<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">data</span>) <span class="op">=</span> <span class="kw">match</span> <span class="ident">buf</span>.<span class="ident">receive</span>(<span class="ident">io</span>).<span class="kw">await</span><span class="question-mark">?</span> {
             <span class="prelude-val">Some</span>(<span class="ident">res</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">res</span>,
             <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="self">self</span>.<span class="ident">got_destroy</span> <span class="op">=</span> <span class="bool-val">true</span>;
@@ -367,7 +375,12 @@
         };
 
         <span class="kw">let</span> <span class="ident">opcode</span> <span class="op">=</span> <span class="ident">header</span>.<span class="ident">opcode</span>;
-        <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;Got a request: header={:?}, arg={:?}&quot;</span>, <span class="ident">header</span>, <span class="ident">arg</span>);
+        <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(
+            <span class="string">&quot;Got a request: header={:?}, arg={:?}, data={:?}&quot;</span>,
+            <span class="ident">header</span>,
+            <span class="ident">arg</span>,
+            <span class="ident">data</span>
+        );
 
         <span class="kw">let</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">ReplyRaw</span>::<span class="ident">new</span>(<span class="ident">header</span>.<span class="ident">unique</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw-2">*</span><span class="ident">io</span>);
         <span class="kw">match</span> <span class="ident">arg</span> {
@@ -434,7 +447,10 @@
             <span class="ident">Arg</span>::<span class="ident">Link</span> { <span class="ident">arg</span>, <span class="ident">newname</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">link</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">newname</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
             <span class="ident">Arg</span>::<span class="ident">Open</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">open</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
             <span class="ident">Arg</span>::<span class="ident">Read</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">read</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Write</span> { <span class="ident">arg</span>, <span class="ident">data</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">write</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">data</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Write</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">match</span> <span class="ident">data</span> {
+                <span class="prelude-val">Some</span>(<span class="ident">data</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">write</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">data</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+                <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;unexpected condition&quot;</span>),
+            },
             <span class="ident">Arg</span>::<span class="ident">Release</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">release</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
             <span class="ident">Arg</span>::<span class="ident">Statfs</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">statfs</span>(<span class="ident">header</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
             <span class="ident">Arg</span>::<span class="ident">Fsync</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">fsync</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,

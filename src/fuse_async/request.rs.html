@@ -316,36 +316,6 @@
 <span id="316">316</span>
 <span id="317">317</span>
 <span id="318">318</span>
-<span id="319">319</span>
-<span id="320">320</span>
-<span id="321">321</span>
-<span id="322">322</span>
-<span id="323">323</span>
-<span id="324">324</span>
-<span id="325">325</span>
-<span id="326">326</span>
-<span id="327">327</span>
-<span id="328">328</span>
-<span id="329">329</span>
-<span id="330">330</span>
-<span id="331">331</span>
-<span id="332">332</span>
-<span id="333">333</span>
-<span id="334">334</span>
-<span id="335">335</span>
-<span id="336">336</span>
-<span id="337">337</span>
-<span id="338">338</span>
-<span id="339">339</span>
-<span id="340">340</span>
-<span id="341">341</span>
-<span id="342">342</span>
-<span id="343">343</span>
-<span id="344">344</span>
-<span id="345">345</span>
-<span id="346">346</span>
-<span id="347">347</span>
-<span id="348">348</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Requests from the kernel.</span>
 
@@ -375,8 +345,10 @@
 };
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">ffi</span>::<span class="ident">OsStr</span>, <span class="ident">io</span>, <span class="ident">mem</span>, <span class="ident">os</span>::<span class="ident">unix</span>::<span class="ident">ffi</span>::<span class="ident">OsStrExt</span>};
 
+<span class="kw">const</span> <span class="ident">IN_HEADER_SIZE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">InHeader</span><span class="op">&gt;</span>();
+
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Arg</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]<span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Arg</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="ident">Init</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">InitIn</span>),
     <span class="ident">Destroy</span>,
     <span class="ident">Lookup</span> {
@@ -415,17 +387,14 @@
     },
     <span class="ident">Open</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OpenIn</span>),
     <span class="ident">Read</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">ReadIn</span>),
-    <span class="ident">Write</span> {
-        <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">WriteIn</span>,
-        <span class="ident">data</span>: <span class="ident">T</span>,
-    },
+    <span class="ident">Write</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">WriteIn</span>),
     <span class="ident">Release</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">ReleaseIn</span>),
     <span class="ident">Statfs</span>,
     <span class="ident">Fsync</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">FsyncIn</span>),
     <span class="ident">Setxattr</span> {
         <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">SetxattrIn</span>,
         <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span>,
-        <span class="ident">value</span>: <span class="ident">T</span>,
+        <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>],
     },
     <span class="ident">Getxattr</span> {
         <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">GetxattrIn</span>,
@@ -461,8 +430,8 @@
     <span class="ident">Unknown</span>,
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">buf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">InHeader</span>, <span class="ident">Arg</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]<span class="op">&gt;</span>)<span class="op">&gt;</span> {
-    <span class="kw">let</span> (<span class="ident">header</span>, <span class="ident">payload</span>) <span class="op">=</span> <span class="ident">parse_header</span>(<span class="ident">buf</span>)<span class="question-mark">?</span>;
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">buf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">InHeader</span>, <span class="ident">Arg</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>, <span class="ident">usize</span>)<span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">header</span> <span class="op">=</span> <span class="ident">parse_header</span>(<span class="ident">buf</span>)<span class="question-mark">?</span>;
     <span class="kw">if</span> <span class="ident">buf</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="ident">header</span>.<span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span> {
         <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(
             <span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>,
@@ -470,230 +439,201 @@
         ));
     }
 
-    <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">parse_arg</span>(<span class="ident">header</span>, <span class="ident">payload</span>)<span class="question-mark">?</span>;
+    <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">arg_len</span>) <span class="op">=</span> <span class="ident">parse_arg</span>(<span class="ident">header</span>, <span class="kw-2">&amp;</span><span class="ident">buf</span>[<span class="ident">IN_HEADER_SIZE</span>..])<span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>((<span class="ident">header</span>, <span class="ident">arg</span>))
+    <span class="prelude-val">Ok</span>((<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">IN_HEADER_SIZE</span> <span class="op">+</span> <span class="ident">arg_len</span>))
 }
 
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">cognitive_complexity</span>)]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse_arg</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">header</span>: <span class="kw-2">&amp;</span><span class="ident">InHeader</span>, <span class="ident">payload</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arg</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]<span class="op">&gt;</span><span class="op">&gt;</span> {
+<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">cast_ptr_alignment</span>)]</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse_header</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">buf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">InHeader</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">header</span> <span class="op">=</span> <span class="ident">buf</span>
+        .<span class="ident">get</span>(..<span class="ident">IN_HEADER_SIZE</span>)
+        .<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>, <span class="string">&quot;in_header&quot;</span>))<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(<span class="kw">unsafe</span> { <span class="kw-2">&amp;</span><span class="kw-2">*</span>(<span class="ident">header</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">InHeader</span>) })
+}
+
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse_arg</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">header</span>: <span class="kw-2">&amp;</span><span class="ident">InHeader</span>, <span class="ident">payload</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">Arg</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>, <span class="ident">usize</span>)<span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cursor</span> <span class="op">=</span> <span class="ident">Cursor</span>::<span class="ident">new</span>(<span class="ident">payload</span>);
     <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">header</span>.<span class="ident">opcode</span> {
         <span class="ident">Opcode</span>::<span class="ident">Init</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Init</span>(<span class="ident">arg</span>)
         }
-        <span class="ident">Opcode</span>::<span class="ident">Destroy</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">payload</span>.<span class="ident">is_empty</span>());
-            <span class="ident">Arg</span>::<span class="ident">Destroy</span>
-        }
+        <span class="ident">Opcode</span>::<span class="ident">Destroy</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Arg</span>::<span class="ident">Destroy</span>,
         <span class="ident">Opcode</span>::<span class="ident">Lookup</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">name</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch_str</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch_str</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Lookup</span> { <span class="ident">name</span> }
         }
         <span class="ident">Opcode</span>::<span class="ident">Forget</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Forget</span>(<span class="ident">arg</span>)
         }
         <span class="ident">Opcode</span>::<span class="ident">Getattr</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Getattr</span>(<span class="ident">arg</span>)
         }
         <span class="ident">Opcode</span>::<span class="ident">Setattr</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Setattr</span>(<span class="ident">arg</span>)
         }
-        <span class="ident">Opcode</span>::<span class="ident">Readlink</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">payload</span>.<span class="ident">is_empty</span>());
-            <span class="ident">Arg</span>::<span class="ident">Readlink</span>
-        }
+        <span class="ident">Opcode</span>::<span class="ident">Readlink</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Arg</span>::<span class="ident">Readlink</span>,
         <span class="ident">Opcode</span>::<span class="ident">Symlink</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">name</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch_str</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="kw">let</span> (<span class="ident">link</span>, <span class="ident">_remains</span>) <span class="op">=</span> <span class="ident">fetch_str</span>(<span class="ident">remains</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch_str</span>()<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">link</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch_str</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Symlink</span> { <span class="ident">name</span>, <span class="ident">link</span> }
         }
         <span class="ident">Opcode</span>::<span class="ident">Mknod</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="kw">let</span> (<span class="ident">name</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch_str</span>(<span class="ident">remains</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch_str</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Mknod</span> { <span class="ident">arg</span>, <span class="ident">name</span> }
         }
         <span class="ident">Opcode</span>::<span class="ident">Mkdir</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="kw">let</span> (<span class="ident">name</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch_str</span>(<span class="ident">remains</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch_str</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Mkdir</span> { <span class="ident">arg</span>, <span class="ident">name</span> }
         }
         <span class="ident">Opcode</span>::<span class="ident">Unlink</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">name</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch_str</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch_str</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Unlink</span> { <span class="ident">name</span> }
         }
         <span class="ident">Opcode</span>::<span class="ident">Rmdir</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">name</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch_str</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch_str</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Rmdir</span> { <span class="ident">name</span> }
         }
         <span class="ident">Opcode</span>::<span class="ident">Rename</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="kw">let</span> (<span class="ident">name</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch_str</span>(<span class="ident">remains</span>)<span class="question-mark">?</span>;
-            <span class="kw">let</span> (<span class="ident">newname</span>, <span class="ident">_remains</span>) <span class="op">=</span> <span class="ident">fetch_str</span>(<span class="ident">remains</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch_str</span>()<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">newname</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch_str</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Rename</span> { <span class="ident">arg</span>, <span class="ident">name</span>, <span class="ident">newname</span> }
         }
         <span class="ident">Opcode</span>::<span class="ident">Link</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="kw">let</span> (<span class="ident">newname</span>, <span class="ident">_remains</span>) <span class="op">=</span> <span class="ident">fetch_str</span>(<span class="ident">remains</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">newname</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch_str</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Link</span> { <span class="ident">arg</span>, <span class="ident">newname</span> }
         }
         <span class="ident">Opcode</span>::<span class="ident">Open</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Open</span>(<span class="ident">arg</span>)
         }
         <span class="ident">Opcode</span>::<span class="ident">Read</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Read</span>(<span class="ident">arg</span>)
         }
         <span class="ident">Opcode</span>::<span class="ident">Write</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">data</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="ident">Arg</span>::<span class="ident">Write</span> { <span class="ident">arg</span>, <span class="ident">data</span> }
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
+            <span class="ident">Arg</span>::<span class="ident">Write</span>(<span class="ident">arg</span>)
         }
         <span class="ident">Opcode</span>::<span class="ident">Release</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Release</span>(<span class="ident">arg</span>)
         }
-        <span class="ident">Opcode</span>::<span class="ident">Statfs</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">payload</span>.<span class="ident">is_empty</span>());
-            <span class="ident">Arg</span>::<span class="ident">Statfs</span>
-        }
+        <span class="ident">Opcode</span>::<span class="ident">Statfs</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Arg</span>::<span class="ident">Statfs</span>,
         <span class="ident">Opcode</span>::<span class="ident">Fsync</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Fsync</span>(<span class="ident">arg</span>)
         }
         <span class="ident">Opcode</span>::<span class="ident">Setxattr</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="kw">let</span> (<span class="ident">name</span>, <span class="ident">value</span>) <span class="op">=</span> <span class="ident">fetch_str</span>(<span class="ident">remains</span>)<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="ident">SetxattrIn</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch_str</span>()<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch_bytes</span>(<span class="ident">arg</span>.<span class="ident">size</span> <span class="kw">as</span> <span class="ident">usize</span>)<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Setxattr</span> { <span class="ident">arg</span>, <span class="ident">name</span>, <span class="ident">value</span> }
         }
         <span class="ident">Opcode</span>::<span class="ident">Getxattr</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="kw">let</span> (<span class="ident">name</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch_str</span>(<span class="ident">remains</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch_str</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Getxattr</span> { <span class="ident">arg</span>, <span class="ident">name</span> }
         }
         <span class="ident">Opcode</span>::<span class="ident">Listxattr</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Listxattr</span> { <span class="ident">arg</span> }
         }
         <span class="ident">Opcode</span>::<span class="ident">Removexattr</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">name</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch_str</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch_str</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Removexattr</span> { <span class="ident">name</span> }
         }
         <span class="ident">Opcode</span>::<span class="ident">Flush</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Flush</span>(<span class="ident">arg</span>)
         }
         <span class="ident">Opcode</span>::<span class="ident">Opendir</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Opendir</span>(<span class="ident">arg</span>)
         }
         <span class="ident">Opcode</span>::<span class="ident">Readdir</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Readdir</span>(<span class="ident">arg</span>)
         }
         <span class="ident">Opcode</span>::<span class="ident">Releasedir</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Releasedir</span>(<span class="ident">arg</span>)
         }
         <span class="ident">Opcode</span>::<span class="ident">Fsyncdir</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Fsyncdir</span>(<span class="ident">arg</span>)
         }
         <span class="ident">Opcode</span>::<span class="ident">Getlk</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Getlk</span>(<span class="ident">arg</span>)
         }
         <span class="ident">Opcode</span>::<span class="ident">Setlk</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Setlk</span>(<span class="ident">arg</span>)
         }
         <span class="ident">Opcode</span>::<span class="ident">Setlkw</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Setlkw</span>(<span class="ident">arg</span>)
         }
         <span class="ident">Opcode</span>::<span class="ident">Access</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Access</span>(<span class="ident">arg</span>)
         }
         <span class="ident">Opcode</span>::<span class="ident">Create</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Create</span>(<span class="ident">arg</span>)
         }
         <span class="ident">Opcode</span>::<span class="ident">Bmap</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> (<span class="ident">arg</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">fetch</span>(<span class="ident">payload</span>)<span class="question-mark">?</span>;
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">remains</span>.<span class="ident">is_empty</span>());
+            <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="ident">cursor</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
             <span class="ident">Arg</span>::<span class="ident">Bmap</span>(<span class="ident">arg</span>)
         }
         <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Arg</span>::<span class="ident">Unknown</span>,
     };
 
-    <span class="prelude-val">Ok</span>(<span class="ident">arg</span>)
+    <span class="prelude-val">Ok</span>((<span class="ident">arg</span>, <span class="ident">cursor</span>.<span class="ident">offset</span>))
 }
 
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">cast_ptr_alignment</span>)]</span>
-<span class="kw">fn</span> <span class="ident">parse_header</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">buf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">InHeader</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>])<span class="op">&gt;</span> {
-    <span class="kw">const</span> <span class="ident">IN_HEADER_SIZE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">InHeader</span><span class="op">&gt;</span>();
+<span class="kw">struct</span> <span class="ident">Cursor</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+    <span class="ident">buf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>],
+    <span class="ident">offset</span>: <span class="ident">usize</span>,
+}
 
-    <span class="kw">if</span> <span class="ident">buf</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="ident">IN_HEADER_SIZE</span> {
-        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>, <span class="string">&quot;in_header&quot;</span>));
+<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Cursor</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">buf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="self">Self</span> { <span class="ident">buf</span>, <span class="ident">offset</span>: <span class="number">0</span> }
     }
-    <span class="kw">let</span> (<span class="ident">header</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">buf</span>.<span class="ident">split_at</span>(<span class="ident">IN_HEADER_SIZE</span>);
 
-    <span class="kw">let</span> <span class="ident">header</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="kw-2">&amp;</span><span class="kw-2">*</span>(<span class="ident">header</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">InHeader</span>) };
-
-    <span class="prelude-val">Ok</span>((<span class="ident">header</span>, <span class="ident">remains</span>))
-}
-
-<span class="kw">fn</span> <span class="ident">fetch</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">buf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">T</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>])<span class="op">&gt;</span> {
-    <span class="kw">if</span> <span class="ident">buf</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>() {
-        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>.<span class="ident">into</span>());
+    <span class="kw">fn</span> <span class="ident">fetch</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">T</span><span class="op">&gt;</span> {
+        <span class="self">self</span>.<span class="ident">fetch_bytes</span>(<span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>())
+            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">data</span><span class="op">|</span> <span class="kw">unsafe</span> { <span class="kw-2">&amp;</span><span class="kw-2">*</span>(<span class="ident">data</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>) })
     }
-    <span class="kw">let</span> (<span class="ident">data</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">buf</span>.<span class="ident">split_at</span>(<span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>());
-    <span class="prelude-val">Ok</span>((<span class="kw">unsafe</span> { <span class="kw-2">&amp;</span><span class="kw-2">*</span>(<span class="ident">data</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>) }, <span class="ident">remains</span>))
-}
 
-<span class="kw">fn</span> <span class="ident">fetch_str</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">buf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>])<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">pos</span> <span class="op">=</span> <span class="ident">buf</span>.<span class="ident">iter</span>().<span class="ident">position</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">b</span><span class="op">|</span> <span class="ident">b</span> <span class="op">=</span><span class="op">=</span> <span class="string">b&#39;\0&#39;</span>);
-    <span class="kw">let</span> (<span class="ident">s</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pos</span>) <span class="op">=</span> <span class="ident">pos</span> {
-        <span class="kw">let</span> (<span class="ident">s</span>, <span class="ident">remains</span>) <span class="op">=</span> <span class="ident">buf</span>.<span class="ident">split_at</span>(<span class="ident">pos</span>);
-        <span class="kw">let</span> <span class="ident">remains</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">remains</span>[<span class="number">1</span>..]; <span class="comment">// skip &#39;\0&#39;</span>
-        (<span class="ident">s</span>, <span class="ident">remains</span>)
-    } <span class="kw">else</span> {
-        (<span class="ident">buf</span>, <span class="kw-2">&amp;</span>[] <span class="kw">as</span> <span class="kw-2">&amp;</span>[<span class="ident">u8</span>])
-    };
-    <span class="prelude-val">Ok</span>((<span class="ident">OsStr</span>::<span class="ident">from_bytes</span>(<span class="ident">s</span>), <span class="ident">remains</span>))
+    <span class="kw">fn</span> <span class="ident">fetch_str</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span><span class="op">&gt;</span> {
+        <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">buf</span>[<span class="self">self</span>.<span class="ident">offset</span>..]
+            .<span class="ident">iter</span>()
+            .<span class="ident">position</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">b</span><span class="op">|</span> <span class="ident">b</span> <span class="op">=</span><span class="op">=</span> <span class="string">b&#39;\0&#39;</span>)
+            .<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>, <span class="string">&quot;fetch_str: missing \\0&quot;</span>))<span class="question-mark">?</span>;
+        <span class="self">self</span>.<span class="ident">fetch_bytes</span>(<span class="ident">len</span>).<span class="ident">map</span>(<span class="ident">OsStr</span>::<span class="ident">from_bytes</span>)
+    }
+
+    <span class="kw">fn</span> <span class="ident">fetch_bytes</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">count</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]<span class="op">&gt;</span> {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="self">self</span>.<span class="ident">offset</span> <span class="op">+</span> <span class="ident">count</span> {
+            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>, <span class="string">&quot;fetch&quot;</span>));
+        }
+
+        <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">buf</span>[<span class="self">self</span>.<span class="ident">offset</span>..<span class="self">self</span>.<span class="ident">offset</span> <span class="op">+</span> <span class="ident">count</span>];
+        <span class="self">self</span>.<span class="ident">offset</span> <span class="op">+</span><span class="op">=</span> <span class="ident">count</span>;
+
+        <span class="prelude-val">Ok</span>(<span class="ident">data</span>)
+    }
 }
 </pre></div>
 </section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p></div></div></aside><script>window.rootPath = "../../";window.currentCrate = "fuse_async";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
