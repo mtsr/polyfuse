@@ -388,13 +388,13 @@
 
                 <span class="kw">if</span> <span class="ident">arg</span>.<span class="ident">major</span> <span class="op">&gt;</span> <span class="number">7</span> {
                     <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;wait for a second INIT request with a 7.X version.&quot;</span>);
-                    <span class="ident">reply</span>.<span class="ident">ok</span>(<span class="kw-2">&amp;</span><span class="ident">init_out</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+                    <span class="ident">reply</span>.<span class="ident">reply</span>(<span class="number">0</span>, <span class="kw-2">&amp;</span>[<span class="ident">init_out</span>.<span class="ident">as_ref</span>()]).<span class="kw">await</span><span class="question-mark">?</span>;
                     <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
                 }
 
                 <span class="kw">if</span> <span class="ident">arg</span>.<span class="ident">major</span> <span class="op">&lt;</span> <span class="number">7</span> <span class="op">|</span><span class="op">|</span> (<span class="ident">arg</span>.<span class="ident">major</span> <span class="op">=</span><span class="op">=</span> <span class="number">7</span> <span class="kw-2">&amp;</span><span class="op">&amp;</span> <span class="ident">arg</span>.<span class="ident">minor</span> <span class="op">&lt;</span> <span class="number">6</span>) {
                     <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;unsupported protocol version: {}.{}&quot;</span>, <span class="ident">arg</span>.<span class="ident">major</span>, <span class="ident">arg</span>.<span class="ident">minor</span>);
-                    <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">EPROTO</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+                    <span class="ident">reply</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">EPROTO</span>).<span class="kw">await</span><span class="question-mark">?</span>;
                     <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">from_raw_os_error</span>(<span class="ident">libc</span>::<span class="ident">EPROTO</span>));
                 }
 
@@ -407,26 +407,26 @@
                 <span class="ident">init_out</span>.<span class="ident">max_write</span> <span class="op">=</span> <span class="ident">MAX_WRITE_SIZE</span> <span class="kw">as</span> <span class="ident">u32</span>;
 
                 <span class="self">self</span>.<span class="ident">got_init</span> <span class="op">=</span> <span class="bool-val">true</span>;
-                <span class="ident">reply</span>.<span class="ident">ok</span>(<span class="kw-2">&amp;</span><span class="ident">init_out</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="ident">reply</span>.<span class="ident">reply</span>(<span class="number">0</span>, <span class="kw-2">&amp;</span>[<span class="ident">init_out</span>.<span class="ident">as_ref</span>()]).<span class="kw">await</span><span class="question-mark">?</span>;
             }
             <span class="kw">_</span> <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">got_init</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(
                     <span class="string">&quot;ignoring an operation before init (opcode={:?})&quot;</span>,
                     <span class="ident">header</span>.<span class="ident">opcode</span>
                 );
-                <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">EIO</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="ident">reply</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">EIO</span>).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
             }
             <span class="ident">Arg</span>::<span class="ident">Destroy</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="self">self</span>.<span class="ident">got_destroy</span> <span class="op">=</span> <span class="bool-val">true</span>;
-                <span class="ident">reply</span>.<span class="ident">ok</span>(<span class="kw-2">&amp;</span>[]).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="ident">reply</span>.<span class="ident">reply</span>(<span class="number">0</span>, <span class="kw-2">&amp;</span>[]).<span class="kw">await</span><span class="question-mark">?</span>;
             }
             <span class="kw">_</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">got_destroy</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(
                     <span class="string">&quot;ignoring an operation after destroy (opcode={:?})&quot;</span>,
                     <span class="ident">header</span>.<span class="ident">opcode</span>
                 );
-                <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">EIO</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="ident">reply</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">EIO</span>).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
             }
             <span class="ident">Arg</span>::<span class="ident">Lookup</span> { <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">lookup</span>(<span class="ident">header</span>, <span class="ident">name</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
@@ -484,7 +484,7 @@
             <span class="comment">// CopyFileRange,</span>
             <span class="ident">Arg</span>::<span class="ident">Unknown</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;unsupported opcode: {:?}&quot;</span>, <span class="ident">header</span>.<span class="ident">opcode</span>);
-                <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="ident">reply</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span><span class="question-mark">?</span>;
             }
         }
 
