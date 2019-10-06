@@ -346,19 +346,6 @@
 <span id="346">346</span>
 <span id="347">347</span>
 <span id="348">348</span>
-<span id="349">349</span>
-<span id="350">350</span>
-<span id="351">351</span>
-<span id="352">352</span>
-<span id="353">353</span>
-<span id="354">354</span>
-<span id="355">355</span>
-<span id="356">356</span>
-<span id="357">357</span>
-<span id="358">358</span>
-<span id="359">359</span>
-<span id="360">360</span>
-<span id="361">361</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">needless_lifetimes</span>)]</span>
 
@@ -373,7 +360,6 @@
         <span class="ident">GetattrIn</span>,
         <span class="ident">GetxattrIn</span>,
         <span class="ident">InHeader</span>,
-        <span class="ident">InitIn</span>,
         <span class="ident">LinkIn</span>,
         <span class="ident">LkIn</span>,
         <span class="ident">MkdirIn</span>,
@@ -393,7 +379,6 @@
         <span class="ident">ReplyCreate</span>,
         <span class="ident">ReplyData</span>,
         <span class="ident">ReplyEntry</span>,
-        <span class="ident">ReplyInit</span>,
         <span class="ident">ReplyLk</span>,
         <span class="ident">ReplyOpen</span>,
         <span class="ident">ReplyStatfs</span>,
@@ -409,17 +394,6 @@
 
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Operations</span> {
-    <span class="kw">fn</span> <span class="ident">init</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
-        <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
-        <span class="ident">header</span>: <span class="kw-2">&amp;</span><span class="ident">InHeader</span>,
-        <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="ident">InitIn</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyInit</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ImplFuture</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="ident">Box</span>::<span class="ident">pin</span>(<span class="ident">reply</span>.<span class="ident">ok</span>())
-    }
-
-    <span class="kw">fn</span> <span class="ident">destroy</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {}
-
     <span class="kw">fn</span> <span class="ident">lookup</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
         <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
         <span class="ident">header</span>: <span class="kw-2">&amp;</span><span class="ident">InHeader</span>,
