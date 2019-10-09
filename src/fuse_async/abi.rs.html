@@ -1228,15 +1228,11 @@
 <span id="1228">1228</span>
 <span id="1229">1229</span>
 <span id="1230">1230</span>
+<span id="1231">1231</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! FUSE application binary interface.</span>
 
 <span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">identity_op</span>)]</span>
-<span class="attribute">#![<span class="ident">warn</span>(
-<span class="ident">missing_debug_implementations</span>, <span class="comment">//</span>
-    <span class="ident">unsafe_code</span>,
-    <span class="ident">clippy</span>::<span class="ident">unimplemented</span>,
-)]</span>
 
 <span class="kw">use</span> <span class="ident">bitflags</span>::<span class="ident">bitflags</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">convert</span>::<span class="ident">TryFrom</span>, <span class="ident">error</span>, <span class="ident">fmt</span>};
@@ -1342,26 +1338,28 @@
     <span class="kw">pub</span> <span class="ident">padding</span>: <span class="ident">u32</span>,
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">libc</span>::<span class="ident">stat</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">FileAttr</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">attr</span>: <span class="ident">libc</span>::<span class="ident">stat</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">ino</span>: <span class="ident">Nodeid</span>::<span class="ident">from_raw</span>(<span class="ident">attr</span>.<span class="ident">st_ino</span>),
-            <span class="ident">size</span>: <span class="ident">attr</span>.<span class="ident">st_size</span> <span class="kw">as</span> <span class="ident">u64</span>,
-            <span class="ident">blocks</span>: <span class="ident">attr</span>.<span class="ident">st_blocks</span> <span class="kw">as</span> <span class="ident">u64</span>,
-            <span class="ident">atime</span>: <span class="ident">attr</span>.<span class="ident">st_atime</span> <span class="kw">as</span> <span class="ident">u64</span>,
-            <span class="ident">mtime</span>: <span class="ident">attr</span>.<span class="ident">st_mtime</span> <span class="kw">as</span> <span class="ident">u64</span>,
-            <span class="ident">ctime</span>: <span class="ident">attr</span>.<span class="ident">st_ctime</span> <span class="kw">as</span> <span class="ident">u64</span>,
-            <span class="ident">atimensec</span>: <span class="ident">attr</span>.<span class="ident">st_atime_nsec</span> <span class="kw">as</span> <span class="ident">u32</span>,
-            <span class="ident">mtimensec</span>: <span class="ident">attr</span>.<span class="ident">st_mtime_nsec</span> <span class="kw">as</span> <span class="ident">u32</span>,
-            <span class="ident">ctimensec</span>: <span class="ident">attr</span>.<span class="ident">st_ctime_nsec</span> <span class="kw">as</span> <span class="ident">u32</span>,
-            <span class="ident">mode</span>: <span class="ident">FileMode</span>::<span class="ident">from_raw</span>(<span class="ident">attr</span>.<span class="ident">st_mode</span>),
-            <span class="ident">nlink</span>: <span class="ident">attr</span>.<span class="ident">st_nlink</span> <span class="kw">as</span> <span class="ident">u32</span>,
-            <span class="ident">uid</span>: <span class="ident">Uid</span>::<span class="ident">from_raw</span>(<span class="ident">attr</span>.<span class="ident">st_uid</span>),
-            <span class="ident">gid</span>: <span class="ident">Gid</span>::<span class="ident">from_raw</span>(<span class="ident">attr</span>.<span class="ident">st_gid</span>),
-            <span class="ident">rdev</span>: <span class="ident">attr</span>.<span class="ident">st_gid</span>,
-            <span class="ident">blksize</span>: <span class="ident">attr</span>.<span class="ident">st_blksize</span> <span class="kw">as</span> <span class="ident">u32</span>,
+<span class="kw">impl</span> <span class="ident">TryFrom</span><span class="op">&lt;</span><span class="ident">libc</span>::<span class="ident">stat</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">FileAttr</span> {
+    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">num</span>::<span class="ident">TryFromIntError</span>;
+
+    <span class="kw">fn</span> <span class="ident">try_from</span>(<span class="ident">attr</span>: <span class="ident">libc</span>::<span class="ident">stat</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="self">Self</span>::<span class="ident">Error</span><span class="op">&gt;</span> {
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span> {
+            <span class="ident">ino</span>: <span class="ident">Nodeid</span>::<span class="ident">from_raw</span>(<span class="ident">u64</span>::<span class="ident">try_from</span>(<span class="ident">attr</span>.<span class="ident">st_ino</span>)<span class="question-mark">?</span>),
+            <span class="ident">size</span>: <span class="ident">u64</span>::<span class="ident">try_from</span>(<span class="ident">attr</span>.<span class="ident">st_size</span>)<span class="question-mark">?</span>,
+            <span class="ident">blocks</span>: <span class="ident">u64</span>::<span class="ident">try_from</span>(<span class="ident">attr</span>.<span class="ident">st_blocks</span>)<span class="question-mark">?</span>,
+            <span class="ident">atime</span>: <span class="ident">u64</span>::<span class="ident">try_from</span>(<span class="ident">attr</span>.<span class="ident">st_atime</span>)<span class="question-mark">?</span>,
+            <span class="ident">mtime</span>: <span class="ident">u64</span>::<span class="ident">try_from</span>(<span class="ident">attr</span>.<span class="ident">st_mtime</span>)<span class="question-mark">?</span>,
+            <span class="ident">ctime</span>: <span class="ident">u64</span>::<span class="ident">try_from</span>(<span class="ident">attr</span>.<span class="ident">st_ctime</span>)<span class="question-mark">?</span>,
+            <span class="ident">atimensec</span>: <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">attr</span>.<span class="ident">st_atime_nsec</span>)<span class="question-mark">?</span>,
+            <span class="ident">mtimensec</span>: <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">attr</span>.<span class="ident">st_mtime_nsec</span>)<span class="question-mark">?</span>,
+            <span class="ident">ctimensec</span>: <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">attr</span>.<span class="ident">st_ctime_nsec</span>)<span class="question-mark">?</span>,
+            <span class="ident">mode</span>: <span class="ident">FileMode</span>::<span class="ident">from_raw</span>(<span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">attr</span>.<span class="ident">st_mode</span>)<span class="question-mark">?</span>),
+            <span class="ident">nlink</span>: <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">attr</span>.<span class="ident">st_nlink</span>)<span class="question-mark">?</span>,
+            <span class="ident">uid</span>: <span class="ident">Uid</span>::<span class="ident">from_raw</span>(<span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">attr</span>.<span class="ident">st_uid</span>)<span class="question-mark">?</span>),
+            <span class="ident">gid</span>: <span class="ident">Gid</span>::<span class="ident">from_raw</span>(<span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">attr</span>.<span class="ident">st_gid</span>)<span class="question-mark">?</span>),
+            <span class="ident">rdev</span>: <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">attr</span>.<span class="ident">st_gid</span>)<span class="question-mark">?</span>,
+            <span class="ident">blksize</span>: <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">attr</span>.<span class="ident">st_blksize</span>)<span class="question-mark">?</span>,
             <span class="ident">padding</span>: <span class="number">0</span>,
-        }
+        })
     }
 }
 
@@ -1416,20 +1414,22 @@
     <span class="kw">pub</span> <span class="ident">spare</span>: [<span class="ident">u32</span>; <span class="number">6usize</span>],
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">libc</span>::<span class="ident">statvfs</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Statfs</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">st</span>: <span class="ident">libc</span>::<span class="ident">statvfs</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">bsize</span>: <span class="ident">st</span>.<span class="ident">f_bsize</span> <span class="kw">as</span> <span class="ident">u32</span>,
-            <span class="ident">frsize</span>: <span class="ident">st</span>.<span class="ident">f_frsize</span> <span class="kw">as</span> <span class="ident">u32</span>,
-            <span class="ident">blocks</span>: <span class="ident">st</span>.<span class="ident">f_blocks</span>,
-            <span class="ident">bfree</span>: <span class="ident">st</span>.<span class="ident">f_bfree</span>,
-            <span class="ident">bavail</span>: <span class="ident">st</span>.<span class="ident">f_bavail</span>,
-            <span class="ident">files</span>: <span class="ident">st</span>.<span class="ident">f_files</span>,
-            <span class="ident">ffree</span>: <span class="ident">st</span>.<span class="ident">f_ffree</span>,
-            <span class="ident">namelen</span>: <span class="ident">st</span>.<span class="ident">f_namemax</span> <span class="kw">as</span> <span class="ident">u32</span>,
+<span class="kw">impl</span> <span class="ident">TryFrom</span><span class="op">&lt;</span><span class="ident">libc</span>::<span class="ident">statvfs</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Statfs</span> {
+    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">num</span>::<span class="ident">TryFromIntError</span>;
+
+    <span class="kw">fn</span> <span class="ident">try_from</span>(<span class="ident">st</span>: <span class="ident">libc</span>::<span class="ident">statvfs</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="self">Self</span>::<span class="ident">Error</span><span class="op">&gt;</span> {
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span> {
+            <span class="ident">bsize</span>: <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">st</span>.<span class="ident">f_bsize</span>)<span class="question-mark">?</span>,
+            <span class="ident">frsize</span>: <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">st</span>.<span class="ident">f_frsize</span>)<span class="question-mark">?</span>,
+            <span class="ident">blocks</span>: <span class="ident">u64</span>::<span class="ident">try_from</span>(<span class="ident">st</span>.<span class="ident">f_blocks</span>)<span class="question-mark">?</span>,
+            <span class="ident">bfree</span>: <span class="ident">u64</span>::<span class="ident">try_from</span>(<span class="ident">st</span>.<span class="ident">f_bfree</span>)<span class="question-mark">?</span>,
+            <span class="ident">bavail</span>: <span class="ident">u64</span>::<span class="ident">try_from</span>(<span class="ident">st</span>.<span class="ident">f_bavail</span>)<span class="question-mark">?</span>,
+            <span class="ident">files</span>: <span class="ident">u64</span>::<span class="ident">try_from</span>(<span class="ident">st</span>.<span class="ident">f_files</span>)<span class="question-mark">?</span>,
+            <span class="ident">ffree</span>: <span class="ident">u64</span>::<span class="ident">try_from</span>(<span class="ident">st</span>.<span class="ident">f_ffree</span>)<span class="question-mark">?</span>,
+            <span class="ident">namelen</span>: <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">st</span>.<span class="ident">f_namemax</span>)<span class="question-mark">?</span>,
             <span class="ident">padding</span>: <span class="number">0</span>,
             <span class="ident">spare</span>: [<span class="number">0u32</span>; <span class="number">6</span>],
-        }
+        })
     }
 }
 
@@ -1997,9 +1997,11 @@
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">libc</span>::<span class="ident">stat</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">AttrOut</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">attr</span>: <span class="ident">libc</span>::<span class="ident">stat</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="self">Self</span>::<span class="ident">from</span>(<span class="ident">FileAttr</span>::<span class="ident">from</span>(<span class="ident">attr</span>))
+<span class="kw">impl</span> <span class="ident">TryFrom</span><span class="op">&lt;</span><span class="ident">libc</span>::<span class="ident">stat</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">AttrOut</span> {
+    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">num</span>::<span class="ident">TryFromIntError</span>;
+
+    <span class="kw">fn</span> <span class="ident">try_from</span>(<span class="ident">attr</span>: <span class="ident">libc</span>::<span class="ident">stat</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="self">Self</span>::<span class="ident">Error</span><span class="op">&gt;</span> {
+        <span class="ident">FileAttr</span>::<span class="ident">try_from</span>(<span class="ident">attr</span>).<span class="ident">map</span>(<span class="self">Self</span>::<span class="ident">from</span>)
     }
 }
 

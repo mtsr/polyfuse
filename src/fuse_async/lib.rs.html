@@ -16,10 +16,30 @@
 <span id="16">16</span>
 <span id="17">17</span>
 <span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! FUSE (Filesystem in userspace) framework for Rust.</span>
 
-<span class="attribute">#![<span class="ident">warn</span>(<span class="ident">missing_debug_implementations</span>, <span class="ident">clippy</span>::<span class="ident">unimplemented</span>)]</span>
+<span class="attribute">#![<span class="ident">warn</span>(<span class="ident">clippy</span>::<span class="ident">checked_conversions</span>)]</span>
+<span class="attribute">#![<span class="ident">deny</span>(
+    <span class="ident">missing_debug_implementations</span>,
+    <span class="ident">clippy</span>::<span class="ident">cast_lossless</span>,
+    <span class="ident">clippy</span>::<span class="ident">cast_possible_truncation</span>,
+    <span class="ident">clippy</span>::<span class="ident">cast_possible_wrap</span>,
+    <span class="ident">clippy</span>::<span class="ident">cast_precision_loss</span>,
+    <span class="ident">clippy</span>::<span class="ident">cast_sign_loss</span>,
+    <span class="ident">clippy</span>::<span class="ident">invalid_upcast_comparisons</span>,
+    <span class="ident">clippy</span>::<span class="ident">unimplemented</span>
+)]</span>
 
 <span class="kw">mod</span> <span class="ident">buffer</span>;
 <span class="kw">mod</span> <span class="ident">op</span>;

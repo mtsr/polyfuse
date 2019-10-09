@@ -514,6 +514,14 @@
 <span id="514">514</span>
 <span id="515">515</span>
 <span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Replies to the kernel.</span>
 
@@ -535,6 +543,7 @@
 <span class="kw">use</span> <span class="ident">memoffset</span>::<span class="ident">offset_of</span>;
 <span class="kw">use</span> <span class="ident">smallvec</span>::<span class="ident">SmallVec</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{
+    <span class="ident">convert</span>::<span class="ident">TryFrom</span>,
     <span class="ident">ffi</span>::<span class="ident">OsStr</span>,
     <span class="ident">fmt</span>,
     <span class="ident">io</span>::{<span class="self">self</span>, <span class="ident">IoSlice</span>},
@@ -555,6 +564,7 @@
 <span class="kw">impl</span> <span class="ident">DirEntry</span> {
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">name</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">OsStr</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">name</span>.<span class="ident">as_ref</span>().<span class="ident">as_bytes</span>();
+        <span class="kw">let</span> <span class="ident">namelen</span> <span class="op">=</span> <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">name</span>.<span class="ident">len</span>()).<span class="ident">expect</span>(<span class="string">&quot;the length of name is too large.&quot;</span>);
 
         <span class="kw">let</span> <span class="ident">entlen</span> <span class="op">=</span> <span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">DirEntryHeader</span><span class="op">&gt;</span>() <span class="op">+</span> <span class="ident">name</span>.<span class="ident">len</span>();
         <span class="kw">let</span> <span class="ident">entsize</span> <span class="op">=</span> <span class="ident">aligned</span>(<span class="ident">entlen</span>);
@@ -568,7 +578,7 @@
             <span class="kw">let</span> <span class="ident">pheader</span> <span class="op">=</span> <span class="ident">p</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw-2">mut</span> <span class="ident">DirEntryHeader</span>;
             (<span class="kw-2">*</span><span class="ident">pheader</span>).<span class="ident">ino</span> <span class="op">=</span> <span class="ident">Nodeid</span>::<span class="ident">from_raw</span>(<span class="number">0</span>);
             (<span class="kw-2">*</span><span class="ident">pheader</span>).<span class="ident">off</span> <span class="op">=</span> <span class="number">0</span>;
-            (<span class="kw-2">*</span><span class="ident">pheader</span>).<span class="ident">namelen</span> <span class="op">=</span> <span class="ident">name</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u32</span>;
+            (<span class="kw-2">*</span><span class="ident">pheader</span>).<span class="ident">namelen</span> <span class="op">=</span> <span class="ident">namelen</span>;
             (<span class="kw-2">*</span><span class="ident">pheader</span>).<span class="ident">typ</span> <span class="op">=</span> <span class="number">0</span>;
 
             <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">unneeded_field_pattern</span>)]</span>
@@ -630,6 +640,7 @@
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">cast_ptr_alignment</span>)]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_name</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">name</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">OsStr</span><span class="op">&gt;</span>) {
         <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">name</span>.<span class="ident">as_ref</span>().<span class="ident">as_bytes</span>();
+        <span class="kw">let</span> <span class="ident">namelen</span> <span class="op">=</span> <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">name</span>.<span class="ident">len</span>()).<span class="ident">expect</span>(<span class="string">&quot;the length of name is too large&quot;</span>);
 
         <span class="kw">let</span> <span class="ident">entlen</span> <span class="op">=</span> <span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">DirEntryHeader</span><span class="op">&gt;</span>() <span class="op">+</span> <span class="ident">name</span>.<span class="ident">len</span>();
         <span class="kw">let</span> <span class="ident">entsize</span> <span class="op">=</span> <span class="ident">aligned</span>(<span class="ident">entlen</span>);
@@ -645,7 +656,7 @@
 
             <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">cast_ptr_alignment</span>)]</span>
             <span class="kw">let</span> <span class="ident">pheader</span> <span class="op">=</span> <span class="ident">p</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw-2">mut</span> <span class="ident">DirEntryHeader</span>;
-            (<span class="kw-2">*</span><span class="ident">pheader</span>).<span class="ident">namelen</span> <span class="op">=</span> <span class="ident">name</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u32</span>;
+            (<span class="kw-2">*</span><span class="ident">pheader</span>).<span class="ident">namelen</span> <span class="op">=</span> <span class="ident">namelen</span>;
 
             <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">unneeded_field_pattern</span>)]</span>
             <span class="kw">let</span> <span class="ident">p</span> <span class="op">=</span> <span class="ident">p</span>.<span class="ident">add</span>(<span class="macro">offset_of</span><span class="macro">!</span>(<span class="ident">DirEntryHeader</span>, <span class="ident">name</span>));
@@ -690,7 +701,12 @@
         <span class="kw">let</span> <span class="ident">out_header</span> <span class="op">=</span> <span class="ident">OutHeader</span> {
             <span class="ident">unique</span>: <span class="self">self</span>.<span class="ident">unique</span>,
             <span class="ident">error</span>: <span class="op">-</span><span class="ident">error</span>,
-            <span class="ident">len</span>: (<span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">OutHeader</span><span class="op">&gt;</span>() <span class="op">+</span> <span class="ident">data_len</span>) <span class="kw">as</span> <span class="ident">u32</span>,
+            <span class="ident">len</span>: <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">OutHeader</span><span class="op">&gt;</span>() <span class="op">+</span> <span class="ident">data_len</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
+                <span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(
+                    <span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>,
+                    <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;the total length of data is too long: {}&quot;</span>, <span class="ident">e</span>),
+                )
+            })<span class="question-mark">?</span>,
         };
 
         <span class="kw">let</span> <span class="ident">vec</span>: <span class="ident">SmallVec</span><span class="op">&lt;</span>[<span class="kw">_</span>; <span class="number">4</span>]<span class="op">&gt;</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">IoSlice</span>::<span class="ident">new</span>(<span class="ident">out_header</span>.<span class="ident">as_ref</span>()))
