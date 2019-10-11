@@ -200,223 +200,62 @@
 <span id="200">200</span>
 <span id="201">201</span>
 <span id="202">202</span>
-<span id="203">203</span>
-<span id="204">204</span>
-<span id="205">205</span>
-<span id="206">206</span>
-<span id="207">207</span>
-<span id="208">208</span>
-<span id="209">209</span>
-<span id="210">210</span>
-<span id="211">211</span>
-<span id="212">212</span>
-<span id="213">213</span>
-<span id="214">214</span>
-<span id="215">215</span>
-<span id="216">216</span>
-<span id="217">217</span>
-<span id="218">218</span>
-<span id="219">219</span>
-<span id="220">220</span>
-<span id="221">221</span>
-<span id="222">222</span>
-<span id="223">223</span>
-<span id="224">224</span>
-<span id="225">225</span>
-<span id="226">226</span>
-<span id="227">227</span>
-<span id="228">228</span>
-<span id="229">229</span>
-<span id="230">230</span>
-<span id="231">231</span>
-<span id="232">232</span>
-<span id="233">233</span>
-<span id="234">234</span>
-<span id="235">235</span>
-<span id="236">236</span>
-<span id="237">237</span>
-<span id="238">238</span>
-<span id="239">239</span>
-<span id="240">240</span>
-<span id="241">241</span>
-<span id="242">242</span>
-<span id="243">243</span>
-<span id="244">244</span>
-<span id="245">245</span>
-<span id="246">246</span>
 </pre><div class="example-wrap"><pre class="rust ">
+<span class="doccomment">//! FUSE session driver.</span>
+
 <span class="kw">use</span> <span class="kw">crate</span>::{
     <span class="ident">abi</span>::<span class="ident">InitOut</span>, <span class="comment">//</span>
-    <span class="ident">buffer</span>::<span class="ident">Buffer</span>,
     <span class="ident">op</span>::<span class="ident">Operations</span>,
     <span class="ident">reply</span>::<span class="ident">ReplyRaw</span>,
-    <span class="ident">request</span>::<span class="ident">Arg</span>,
-    <span class="ident">MAX_WRITE_SIZE</span>,
+    <span class="ident">request</span>::{<span class="ident">Arg</span>, <span class="ident">Buffer</span>, <span class="ident">Request</span>, <span class="ident">MAX_WRITE_SIZE</span>},
 };
-<span class="kw">use</span> <span class="ident">futures</span>::{
-    <span class="ident">future</span>::{<span class="ident">FusedFuture</span>, <span class="ident">FutureExt</span>},
-    <span class="ident">io</span>::{<span class="ident">AsyncRead</span>, <span class="ident">AsyncWrite</span>},
-    <span class="ident">select</span>,
-};
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">convert</span>::<span class="ident">TryFrom</span>, <span class="ident">io</span>, <span class="ident">pin</span>::<span class="ident">Pin</span>};
+<span class="kw">use</span> <span class="ident">futures</span>::<span class="ident">io</span>::{<span class="ident">AsyncRead</span>, <span class="ident">AsyncWrite</span>};
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">io</span>;
 
-<span class="doccomment">/// A single threaded, sequential filesystem driver.</span>
+<span class="doccomment">/// A FUSE filesystem driver.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// This session driver does *not* receive the next request from the kernel,</span>
 <span class="doccomment">/// until the processing result for the previous request has been sent.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Session</span> {
-    <span class="ident">proto_major</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>,
-    <span class="ident">proto_minor</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>,
-    <span class="ident">got_init</span>: <span class="ident">bool</span>,
+    <span class="ident">proto_major</span>: <span class="ident">u32</span>,
+    <span class="ident">proto_minor</span>: <span class="ident">u32</span>,
+    <span class="ident">max_readahead</span>: <span class="ident">u32</span>,
     <span class="ident">got_destroy</span>: <span class="ident">bool</span>,
 }
 
-<span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">Session</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="self">Self</span>::<span class="ident">new</span>()
-    }
-}
-
 <span class="kw">impl</span> <span class="ident">Session</span> {
-    <span class="doccomment">/// Create a new `Session`.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">proto_major</span>: <span class="prelude-val">None</span>,
-            <span class="ident">proto_minor</span>: <span class="prelude-val">None</span>,
-            <span class="ident">got_init</span>: <span class="bool-val">false</span>,
-            <span class="ident">got_destroy</span>: <span class="bool-val">false</span>,
-        }
+    <span class="doccomment">/// Create a new session initializer.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">initializer</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">InitSession</span> {
+        <span class="ident">InitSession</span>::<span class="ident">default</span>()
     }
 
-    <span class="doccomment">/// Returns the major protocol version negotiated with the kernel.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">proto_major</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span> {
+    <span class="doccomment">/// Returns the major protocol version from the kernel.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">proto_major</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u32</span> {
         <span class="self">self</span>.<span class="ident">proto_major</span>
     }
 
-    <span class="doccomment">/// Returns the minor protocol version negotiated with the kernel.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">proto_minor</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span> {
+    <span class="doccomment">/// Returns the minor protocol version from the kernel.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">proto_minor</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u32</span> {
         <span class="self">self</span>.<span class="ident">proto_minor</span>
     }
 
-    <span class="doccomment">/// Run a session with the kernel.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tokio&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span>, <span class="ident">T</span><span class="op">&gt;</span>(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="self">self</span>,
-        <span class="ident">io</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">I</span>,
-        <span class="ident">buf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Buffer</span>,
-        <span class="ident">ops</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">T</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">I</span>: <span class="ident">AsyncRead</span> <span class="op">+</span> <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
-        <span class="ident">T</span>: <span class="ident">Operations</span>,
-    {
-        <span class="self">self</span>.<span class="ident">run_until</span>(<span class="ident">io</span>, <span class="ident">buf</span>, <span class="ident">ops</span>, <span class="kw">crate</span>::<span class="ident">tokio</span>::<span class="ident">default_shutdown_signal</span>()<span class="question-mark">?</span>)
-            .<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(())
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">max_readahead</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u32</span> {
+        <span class="self">self</span>.<span class="ident">max_readahead</span>
     }
 
-    <span class="doccomment">/// Run a session with the kernel until the provided shutdown signal is received.</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run_until</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span>, <span class="ident">T</span>, <span class="ident">S</span><span class="op">&gt;</span>(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="self">self</span>,
-        <span class="ident">io</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">I</span>,
-        <span class="ident">buf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Buffer</span>,
-        <span class="ident">ops</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">T</span>,
-        <span class="ident">sig</span>: <span class="ident">S</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">S</span>::<span class="ident">Output</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">I</span>: <span class="ident">AsyncRead</span> <span class="op">+</span> <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
-        <span class="ident">T</span>: <span class="ident">Operations</span>,
-        <span class="ident">S</span>: <span class="ident">FusedFuture</span> <span class="op">+</span> <span class="ident">Unpin</span>,
-    {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sig</span> <span class="op">=</span> <span class="ident">sig</span>;
-        <span class="kw">loop</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">turn</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">turn</span>(<span class="ident">io</span>, <span class="ident">buf</span>, <span class="ident">ops</span>);
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">turn</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">Pin</span>::<span class="ident">new_unchecked</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">turn</span>) }.<span class="ident">fuse</span>();
-
-            <span class="macro">select</span><span class="macro">!</span> {
-                <span class="ident">res</span> <span class="op">=</span> <span class="ident">turn</span> <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="kw">let</span> <span class="ident">destroyed</span> <span class="op">=</span> <span class="ident">res</span><span class="question-mark">?</span>;
-                    <span class="kw">if</span> <span class="ident">destroyed</span> {
-                        <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;The session is closed successfully&quot;</span>);
-                        <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
-                    }
-                },
-                <span class="ident">res</span> <span class="op">=</span> <span class="ident">sig</span> <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;Got shutdown signal&quot;</span>);
-                    <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">res</span>))
-                },
-            };
-        }
-    }
-
-    <span class="doccomment">/// Receives one request from the channel, and returns its processing result.</span>
+    <span class="doccomment">/// Process an incoming request and return its reply to the kernel.</span>
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">cognitive_complexity</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">turn</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span>, <span class="ident">T</span><span class="op">&gt;</span>(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="self">self</span>,
-        <span class="ident">io</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">I</span>,
-        <span class="ident">buf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Buffer</span>,
-        <span class="ident">ops</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">T</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">I</span>: <span class="ident">AsyncRead</span> <span class="op">+</span> <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
-        <span class="ident">T</span>: <span class="ident">Operations</span>,
-    {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">got_destroy</span> {
-            <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>);
-        }
-
-        <span class="kw">let</span> (<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">data</span>) <span class="op">=</span> <span class="kw">match</span> <span class="ident">buf</span>.<span class="ident">receive</span>(<span class="ident">io</span>).<span class="kw">await</span><span class="question-mark">?</span> {
-            <span class="prelude-val">Some</span>(<span class="ident">res</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">res</span>,
-            <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>);
-            }
-        };
-
-        <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(
-            <span class="string">&quot;Got a request: unique={}, opcode={:?}, arg={:?}, data={:?}&quot;</span>,
-            <span class="ident">header</span>.<span class="ident">unique</span>,
-            <span class="ident">header</span>.<span class="ident">opcode</span>(),
-            <span class="ident">arg</span>,
-            <span class="ident">data</span>
-        );
-
-        <span class="kw">let</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">ReplyRaw</span>::<span class="ident">new</span>(<span class="ident">header</span>.<span class="ident">unique</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw-2">*</span><span class="ident">io</span>);
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">process</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
+        <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
+        <span class="ident">request</span>: <span class="ident">Request</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
+        <span class="ident">data</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyRaw</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
+        <span class="ident">ops</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw">impl</span> <span class="ident">Operations</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
+    ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span> {
+        <span class="kw">let</span> <span class="ident">Request</span> { <span class="ident">header</span>, <span class="ident">arg</span>, .. } <span class="op">=</span> <span class="ident">request</span>;
         <span class="kw">match</span> <span class="ident">arg</span> {
-            <span class="ident">Arg</span>::<span class="ident">Init</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">init_out</span> <span class="op">=</span> <span class="ident">InitOut</span>::<span class="ident">default</span>();
-
-                <span class="kw">if</span> <span class="ident">arg</span>.<span class="ident">major</span> <span class="op">&gt;</span> <span class="number">7</span> {
-                    <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;wait for a second INIT request with a 7.X version.&quot;</span>);
-                    <span class="ident">reply</span>.<span class="ident">reply</span>(<span class="number">0</span>, <span class="kw-2">&amp;</span>[<span class="ident">init_out</span>.<span class="ident">as_ref</span>()]).<span class="kw">await</span><span class="question-mark">?</span>;
-                    <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
-                }
-
-                <span class="kw">if</span> <span class="ident">arg</span>.<span class="ident">major</span> <span class="op">&lt;</span> <span class="number">7</span> <span class="op">|</span><span class="op">|</span> (<span class="ident">arg</span>.<span class="ident">major</span> <span class="op">=</span><span class="op">=</span> <span class="number">7</span> <span class="kw-2">&amp;</span><span class="op">&amp;</span> <span class="ident">arg</span>.<span class="ident">minor</span> <span class="op">&lt;</span> <span class="number">6</span>) {
-                    <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;unsupported protocol version: {}.{}&quot;</span>, <span class="ident">arg</span>.<span class="ident">major</span>, <span class="ident">arg</span>.<span class="ident">minor</span>);
-                    <span class="ident">reply</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">EPROTO</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">from_raw_os_error</span>(<span class="ident">libc</span>::<span class="ident">EPROTO</span>));
-                }
-
-                <span class="comment">// remember the protocol version</span>
-                <span class="self">self</span>.<span class="ident">proto_major</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">arg</span>.<span class="ident">major</span>);
-                <span class="self">self</span>.<span class="ident">proto_minor</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">arg</span>.<span class="ident">minor</span>);
-
-                <span class="comment">// TODO: max_background, congestion_threshold, time_gran, max_pages</span>
-                <span class="ident">init_out</span>.<span class="ident">max_readahead</span> <span class="op">=</span> <span class="ident">arg</span>.<span class="ident">max_readahead</span>;
-                <span class="ident">init_out</span>.<span class="ident">max_write</span> <span class="op">=</span> <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">MAX_WRITE_SIZE</span>).<span class="ident">expect</span>(<span class="string">&quot;caught a bug&quot;</span>);
-
-                <span class="self">self</span>.<span class="ident">got_init</span> <span class="op">=</span> <span class="bool-val">true</span>;
-                <span class="ident">reply</span>.<span class="ident">reply</span>(<span class="number">0</span>, <span class="kw-2">&amp;</span>[<span class="ident">init_out</span>.<span class="ident">as_ref</span>()]).<span class="kw">await</span><span class="question-mark">?</span>;
-            }
-            <span class="kw">_</span> <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">got_init</span> <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(
-                    <span class="string">&quot;ignoring an operation before init (opcode={:?})&quot;</span>,
-                    <span class="ident">header</span>.<span class="ident">opcode</span>
-                );
-                <span class="ident">reply</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">EIO</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-                <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
-            }
+            <span class="ident">Arg</span>::<span class="ident">Init</span> { .. } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">reply</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">EIO</span>).<span class="kw">await</span><span class="question-mark">?</span>,
             <span class="ident">Arg</span>::<span class="ident">Destroy</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="self">self</span>.<span class="ident">got_destroy</span> <span class="op">=</span> <span class="bool-val">true</span>;
                 <span class="ident">reply</span>.<span class="ident">reply</span>(<span class="number">0</span>, <span class="kw-2">&amp;</span>[]).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -430,11 +269,11 @@
                 <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
             }
             <span class="ident">Arg</span>::<span class="ident">Lookup</span> { <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">lookup</span>(<span class="ident">header</span>, <span class="ident">name</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Forget</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="ident">Arg</span>::<span class="ident">Forget</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">ops</span>.<span class="ident">forget</span>(<span class="ident">header</span>, <span class="ident">arg</span>);
             }
-            <span class="ident">Arg</span>::<span class="ident">Getattr</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">getattr</span>(<span class="ident">header</span>, <span class="kw-2">&amp;</span><span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Setattr</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">setattr</span>(<span class="ident">header</span>, <span class="kw-2">&amp;</span><span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Getattr</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">getattr</span>(<span class="ident">header</span>, <span class="kw-2">&amp;</span><span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Setattr</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">setattr</span>(<span class="ident">header</span>, <span class="kw-2">&amp;</span><span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
             <span class="ident">Arg</span>::<span class="ident">Readlink</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">readlink</span>(<span class="ident">header</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
             <span class="ident">Arg</span>::<span class="ident">Symlink</span> { <span class="ident">name</span>, <span class="ident">link</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">symlink</span>(<span class="ident">header</span>, <span class="ident">name</span>, <span class="ident">link</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
             <span class="ident">Arg</span>::<span class="ident">Mknod</span> { <span class="ident">arg</span>, <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">mknod</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">name</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
@@ -445,32 +284,32 @@
                 <span class="ident">ops</span>.<span class="ident">rename</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">name</span>, <span class="ident">newname</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>
             }
             <span class="ident">Arg</span>::<span class="ident">Link</span> { <span class="ident">arg</span>, <span class="ident">newname</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">link</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">newname</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Open</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">open</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Read</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">read</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Write</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">match</span> <span class="ident">data</span> {
+            <span class="ident">Arg</span>::<span class="ident">Open</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">open</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Read</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">read</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Write</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="kw">match</span> <span class="ident">data</span> {
                 <span class="prelude-val">Some</span>(<span class="ident">data</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">write</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">data</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
                 <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;unexpected condition&quot;</span>),
             },
-            <span class="ident">Arg</span>::<span class="ident">Release</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">release</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Release</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">release</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
             <span class="ident">Arg</span>::<span class="ident">Statfs</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">statfs</span>(<span class="ident">header</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Fsync</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">fsync</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Fsync</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">fsync</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
             <span class="ident">Arg</span>::<span class="ident">Setxattr</span> { <span class="ident">arg</span>, <span class="ident">name</span>, <span class="ident">value</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">ops</span>.<span class="ident">setxattr</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">name</span>, <span class="ident">value</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>
             }
             <span class="ident">Arg</span>::<span class="ident">Getxattr</span> { <span class="ident">arg</span>, <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">getxattr</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">name</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
             <span class="ident">Arg</span>::<span class="ident">Listxattr</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">listxattr</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
             <span class="ident">Arg</span>::<span class="ident">Removexattr</span> { <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">removexattr</span>(<span class="ident">header</span>, <span class="ident">name</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Flush</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">flush</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Opendir</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">opendir</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Readdir</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">readdir</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Releasedir</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">releasedir</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Fsyncdir</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">fsyncdir</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Getlk</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">getlk</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Setlk</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">setlk</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="bool-val">false</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Setlkw</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">setlk</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="bool-val">true</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Access</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">access</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Create</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">create</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
-            <span class="ident">Arg</span>::<span class="ident">Bmap</span>(<span class="ident">arg</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">bmap</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Flush</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">flush</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Opendir</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">opendir</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Readdir</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">readdir</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Releasedir</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">releasedir</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Fsyncdir</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">fsyncdir</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Getlk</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">getlk</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Setlk</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">setlk</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="bool-val">false</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Setlkw</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">setlk</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="bool-val">true</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Access</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">access</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Create</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">create</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="ident">Arg</span>::<span class="ident">Bmap</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ops</span>.<span class="ident">bmap</span>(<span class="ident">header</span>, <span class="ident">arg</span>, <span class="ident">reply</span>.<span class="ident">into</span>()).<span class="kw">await</span><span class="question-mark">?</span>,
 
             <span class="comment">// Interrupt,</span>
             <span class="comment">// Ioctl,</span>
@@ -489,6 +328,79 @@
         }
 
         <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
+    }
+}
+
+<span class="doccomment">/// Session initializer.</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Default</span>)]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">InitSession</span> {
+    <span class="ident">_p</span>: (),
+}
+
+<span class="kw">impl</span> <span class="ident">InitSession</span> {
+    <span class="doccomment">/// Start a new FUSE session.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// This function receives an INIT request from the kernel and replies</span>
+    <span class="doccomment">/// after initializing the connection parameters.</span>
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">start</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">io</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">I</span>, <span class="ident">buf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Buffer</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Session</span><span class="op">&gt;</span>
+    <span class="kw">where</span>
+        <span class="ident">I</span>: <span class="ident">AsyncRead</span> <span class="op">+</span> <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
+    {
+        <span class="kw">loop</span> {
+            <span class="kw">let</span> <span class="ident">terminated</span> <span class="op">=</span> <span class="ident">buf</span>.<span class="ident">receive</span>(<span class="ident">io</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="kw">if</span> <span class="ident">terminated</span> {
+                <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;the connection is closed&quot;</span>);
+                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">from_raw_os_error</span>(<span class="ident">libc</span>::<span class="ident">ENODEV</span>));
+            }
+
+            <span class="kw">let</span> (<span class="ident">Request</span> { <span class="ident">header</span>, <span class="ident">arg</span>, .. }, <span class="ident">_data</span>) <span class="op">=</span> <span class="ident">buf</span>.<span class="ident">extract</span>()<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">ReplyRaw</span>::<span class="ident">new</span>(<span class="ident">header</span>.<span class="ident">unique</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw-2">*</span><span class="ident">io</span>);
+
+            <span class="kw">let</span> (<span class="ident">proto_major</span>, <span class="ident">proto_minor</span>, <span class="ident">max_readahead</span>);
+            <span class="kw">match</span> <span class="ident">arg</span> {
+                <span class="ident">Arg</span>::<span class="ident">Init</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">init_out</span> <span class="op">=</span> <span class="ident">InitOut</span>::<span class="ident">default</span>();
+
+                    <span class="kw">if</span> <span class="ident">arg</span>.<span class="ident">major</span> <span class="op">&gt;</span> <span class="number">7</span> {
+                        <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;wait for a second INIT request with a 7.X version.&quot;</span>);
+                        <span class="ident">reply</span>.<span class="ident">reply</span>(<span class="number">0</span>, <span class="kw-2">&amp;</span>[<span class="ident">init_out</span>.<span class="ident">as_ref</span>()]).<span class="kw">await</span><span class="question-mark">?</span>;
+                        <span class="kw">continue</span>;
+                    }
+
+                    <span class="kw">if</span> <span class="ident">arg</span>.<span class="ident">major</span> <span class="op">&lt;</span> <span class="number">7</span> <span class="op">|</span><span class="op">|</span> (<span class="ident">arg</span>.<span class="ident">major</span> <span class="op">=</span><span class="op">=</span> <span class="number">7</span> <span class="kw-2">&amp;</span><span class="op">&amp;</span> <span class="ident">arg</span>.<span class="ident">minor</span> <span class="op">&lt;</span> <span class="number">6</span>) {
+                        <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;unsupported protocol version: {}.{}&quot;</span>, <span class="ident">arg</span>.<span class="ident">major</span>, <span class="ident">arg</span>.<span class="ident">minor</span>);
+                        <span class="ident">reply</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">EPROTO</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+                        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">from_raw_os_error</span>(<span class="ident">libc</span>::<span class="ident">EPROTO</span>));
+                    }
+
+                    <span class="comment">// remember the kernel parameters.</span>
+                    <span class="ident">proto_major</span> <span class="op">=</span> <span class="ident">arg</span>.<span class="ident">major</span>;
+                    <span class="ident">proto_minor</span> <span class="op">=</span> <span class="ident">arg</span>.<span class="ident">minor</span>;
+                    <span class="ident">max_readahead</span> <span class="op">=</span> <span class="ident">arg</span>.<span class="ident">max_readahead</span>;
+
+                    <span class="comment">// TODO: max_background, congestion_threshold, time_gran, max_pages</span>
+                    <span class="ident">init_out</span>.<span class="ident">max_readahead</span> <span class="op">=</span> <span class="ident">arg</span>.<span class="ident">max_readahead</span>;
+                    <span class="ident">init_out</span>.<span class="ident">max_write</span> <span class="op">=</span> <span class="ident">MAX_WRITE_SIZE</span>;
+
+                    <span class="ident">reply</span>.<span class="ident">reply</span>(<span class="number">0</span>, <span class="kw-2">&amp;</span>[<span class="ident">init_out</span>.<span class="ident">as_ref</span>()]).<span class="kw">await</span><span class="question-mark">?</span>;
+                }
+                <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(
+                        <span class="string">&quot;ignoring an operation before init (opcode={:?})&quot;</span>,
+                        <span class="ident">header</span>.<span class="ident">opcode</span>
+                    );
+                    <span class="ident">reply</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">EIO</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+                    <span class="kw">continue</span>;
+                }
+            }
+
+            <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Session</span> {
+                <span class="ident">proto_major</span>,
+                <span class="ident">proto_minor</span>,
+                <span class="ident">max_readahead</span>,
+                <span class="ident">got_destroy</span>: <span class="bool-val">false</span>,
+            });
+        }
     }
 }
 </pre></div>
