@@ -193,8 +193,11 @@
 <span id="193">193</span>
 <span id="194">194</span>
 <span id="195">195</span>
+<span id="196">196</span>
 </pre><div class="example-wrap"><pre class="rust ">
-<span class="doccomment">//! Asynchronous I/O to communicate with the kernel.</span>
+<span class="doccomment">//! Evented I/O that communicates with the FUSE kernel driver.</span>
+
+<span class="attribute">#![<span class="ident">deny</span>(<span class="ident">missing_debug_implementations</span>, <span class="ident">clippy</span>::<span class="ident">unimplemented</span>)]</span>
 
 <span class="kw">use</span> <span class="ident">libc</span>::{<span class="ident">c_char</span>, <span class="ident">c_int</span>, <span class="ident">c_void</span>, <span class="ident">iovec</span>};
 <span class="kw">use</span> <span class="ident">mio</span>::{<span class="ident">unix</span>::<span class="ident">EventedFd</span>, <span class="ident">Evented</span>, <span class="ident">PollOpt</span>, <span class="ident">Ready</span>, <span class="ident">Token</span>};
@@ -222,6 +225,7 @@
     <span class="kw">fn</span> <span class="ident">fuse_opt_free_args</span>(<span class="ident">args</span>: <span class="kw-2">*</span><span class="kw-2">mut</span> <span class="ident">fuse_args</span>);
 }
 
+<span class="doccomment">/// An evented I/O object that communicates with the FUSE kernel driver.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Channel</span> {
     <span class="ident">raw_fd</span>: <span class="ident">RawFd</span>,
@@ -237,20 +241,18 @@
 }
 
 <span class="kw">impl</span> <span class="ident">Channel</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">fsname</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">OsStr</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Open a new channel.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">open</span>(
         <span class="ident">mountpoint</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span>,
         <span class="ident">mountopts</span>: <span class="kw">impl</span> <span class="ident">IntoIterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">OsStr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">fsname</span> <span class="op">=</span> <span class="ident">fsname</span>.<span class="ident">as_ref</span>();
         <span class="kw">let</span> <span class="ident">mountpoint</span> <span class="op">=</span> <span class="ident">mountpoint</span>.<span class="ident">as_ref</span>();
-
         <span class="kw">let</span> <span class="ident">c_mountpoint</span> <span class="op">=</span> <span class="ident">CString</span>::<span class="ident">new</span>(<span class="ident">mountpoint</span>.<span class="ident">as_os_str</span>().<span class="ident">as_bytes</span>())<span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">args</span> <span class="op">=</span> <span class="macro">vec</span><span class="macro">!</span>[<span class="ident">CString</span>::<span class="ident">new</span>(<span class="ident">fsname</span>.<span class="ident">as_bytes</span>())<span class="question-mark">?</span>];
-        <span class="kw">for</span> <span class="ident">opt</span> <span class="kw">in</span> <span class="ident">mountopts</span> {
-            <span class="ident">args</span>.<span class="ident">push</span>(<span class="ident">CString</span>::<span class="ident">new</span>(<span class="ident">opt</span>.<span class="ident">as_ref</span>().<span class="ident">as_bytes</span>())<span class="question-mark">?</span>);
-        }
+        <span class="kw">let</span> <span class="ident">args</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">CString</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">mountopts</span>
+            .<span class="ident">into_iter</span>()
+            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">opt</span><span class="op">|</span> <span class="ident">CString</span>::<span class="ident">new</span>(<span class="ident">opt</span>.<span class="ident">as_ref</span>().<span class="ident">as_bytes</span>()))
+            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">c_args</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">*</span><span class="kw">const</span> <span class="ident">c_char</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">args</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">arg</span><span class="op">|</span> <span class="ident">arg</span>.<span class="ident">as_ptr</span>()).<span class="ident">collect</span>();
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">f_args</span> <span class="op">=</span> <span class="ident">fuse_args</span> {
