@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["tokio",""]]});
+initSidebarItems({"struct":[["Channel",""]]});

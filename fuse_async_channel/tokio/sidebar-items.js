@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["Builder",""],["Channel","Asynchronous I/O to communicate with the kernel."]]});

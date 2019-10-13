@@ -135,12 +135,12 @@
 )]</span>
 
 <span class="kw">mod</span> <span class="ident">op</span>;
-<span class="kw">mod</span> <span class="ident">tokio</span>;
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">abi</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">reply</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">request</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">session</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">tokio</span>;
 
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">op</span>::<span class="ident">Operations</span>;
 
@@ -225,7 +225,7 @@
 }
 
 <span class="doccomment">/// Run a FUSE filesystem mounted on the specified path.</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tokio&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;channel&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tokio&quot;</span>)]</span>
 <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">mount</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
     <span class="ident">fsname</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">std</span>::<span class="ident">ffi</span>::<span class="ident">OsStr</span><span class="op">&gt;</span>,
     <span class="ident">mointpoint</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">std</span>::<span class="ident">path</span>::<span class="ident">Path</span><span class="op">&gt;</span>,
@@ -235,7 +235,7 @@
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="kw">for</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Operations</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]<span class="op">&gt;</span>,
 {
-    <span class="kw">let</span> <span class="ident">channel</span> <span class="op">=</span> <span class="ident">fuse_async_channel</span>::<span class="ident">tokio</span>::<span class="ident">Channel</span>::<span class="ident">mount</span>(<span class="ident">fsname</span>, <span class="ident">mointpoint</span>, <span class="ident">mountopts</span>)<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">channel</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">tokio</span>::<span class="ident">Channel</span>::<span class="ident">mount</span>(<span class="ident">fsname</span>, <span class="ident">mointpoint</span>, <span class="ident">mountopts</span>)<span class="question-mark">?</span>;
     <span class="kw">let</span> <span class="ident">sig</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">tokio</span>::<span class="ident">default_shutdown_signal</span>()<span class="question-mark">?</span>;
 
     <span class="kw">crate</span>::<span class="ident">run</span>(<span class="ident">channel</span>, <span class="ident">sig</span>, <span class="ident">ops</span>).<span class="kw">await</span><span class="question-mark">?</span>;

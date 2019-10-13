@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["default_shutdown_signal",""]],"struct":[["Builder",""],["Channel","Asynchronous I/O to communicate with the kernel."]]});
