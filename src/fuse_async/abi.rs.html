@@ -1229,10 +1229,14 @@
 <span id="1229">1229</span>
 <span id="1230">1230</span>
 <span id="1231">1231</span>
+<span id="1232">1232</span>
+<span id="1233">1233</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! FUSE application binary interface.</span>
 
 <span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">identity_op</span>)]</span>
+
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">parse</span>;
 
 <span class="kw">use</span> <span class="ident">bitflags</span>::<span class="ident">bitflags</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">convert</span>::<span class="ident">TryFrom</span>, <span class="ident">error</span>, <span class="ident">fmt</span>};

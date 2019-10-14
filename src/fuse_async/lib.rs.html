@@ -24,6 +24,8 @@
 <span id="24">24</span>
 <span id="25">25</span>
 <span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! FUSE (Filesystem in userspace) framework for Rust.</span>
 
@@ -40,15 +42,17 @@
     <span class="ident">clippy</span>::<span class="ident">unimplemented</span>
 )]</span>
 
+<span class="kw">mod</span> <span class="ident">dir</span>;
 <span class="kw">mod</span> <span class="ident">main_loop</span>;
 <span class="kw">mod</span> <span class="ident">op</span>;
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">abi</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">buf</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">reply</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">request</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">session</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">tokio</span>;
 
+<span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">dir</span>::<span class="ident">DirEntry</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">main_loop</span>::<span class="ident">main_loop</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">op</span>::<span class="ident">Operations</span>;
 </pre></div>
