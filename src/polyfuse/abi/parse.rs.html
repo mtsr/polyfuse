@@ -540,15 +540,14 @@
     },
     <span class="ident">Setlk</span> {
         <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">LkIn</span>,
-    },
-    <span class="ident">Setlkw</span> {
-        <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">LkIn</span>,
+        <span class="ident">sleep</span>: <span class="ident">bool</span>,
     },
     <span class="ident">Access</span> {
         <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">AccessIn</span>,
     },
     <span class="ident">Create</span> {
         <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">CreateIn</span>,
+        <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span>,
     },
     <span class="ident">Bmap</span> {
         <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">BmapIn</span>,
@@ -799,11 +798,11 @@
             }
             <span class="prelude-val">Some</span>(<span class="ident">Opcode</span>::<span class="ident">Setlk</span>) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">Arg</span>::<span class="ident">Setlk</span> { <span class="ident">arg</span> })
+                <span class="prelude-val">Ok</span>(<span class="ident">Arg</span>::<span class="ident">Setlk</span> { <span class="ident">arg</span>, <span class="ident">sleep</span>: <span class="bool-val">false</span> })
             }
             <span class="prelude-val">Some</span>(<span class="ident">Opcode</span>::<span class="ident">Setlkw</span>) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">Arg</span>::<span class="ident">Setlkw</span> { <span class="ident">arg</span> })
+                <span class="prelude-val">Ok</span>(<span class="ident">Arg</span>::<span class="ident">Setlk</span> { <span class="ident">arg</span>, <span class="ident">sleep</span>: <span class="bool-val">true</span> })
             }
             <span class="prelude-val">Some</span>(<span class="ident">Opcode</span>::<span class="ident">Access</span>) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
@@ -811,7 +810,8 @@
             }
             <span class="prelude-val">Some</span>(<span class="ident">Opcode</span>::<span class="ident">Create</span>) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">Arg</span>::<span class="ident">Create</span> { <span class="ident">arg</span> })
+                <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch_str</span>()<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(<span class="ident">Arg</span>::<span class="ident">Create</span> { <span class="ident">arg</span>, <span class="ident">name</span> })
             }
             <span class="prelude-val">Some</span>(<span class="ident">Opcode</span>::<span class="ident">Bmap</span>) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
