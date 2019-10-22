@@ -105,9 +105,9 @@
     <span class="ident">op</span>::<span class="ident">Operations</span>,
     <span class="ident">session</span>::{<span class="ident">Background</span>, <span class="ident">Session</span>},
 };
-<span class="kw">use</span> <span class="ident">futures</span>::{
+<span class="kw">use</span> <span class="ident">futures_io</span>::{<span class="ident">AsyncRead</span>, <span class="ident">AsyncWrite</span>};
+<span class="kw">use</span> <span class="ident">futures_util</span>::{
     <span class="ident">future</span>::{<span class="ident">Future</span>, <span class="ident">FutureExt</span>},
-    <span class="ident">io</span>::{<span class="ident">AsyncRead</span>, <span class="ident">AsyncWrite</span>},
     <span class="ident">ready</span>, <span class="ident">select</span>,
 };
 <span class="kw">use</span> <span class="ident">std</span>::{

@@ -105,11 +105,13 @@
 <span id="105">105</span>
 <span id="106">106</span>
 <span id="107">107</span>
+<span id="108">108</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Requests from the kernel.</span>
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">abi</span>::<span class="ident">parse</span>::{<span class="ident">Arg</span>, <span class="ident">Parser</span>, <span class="ident">Request</span>};
-<span class="kw">use</span> <span class="ident">futures</span>::{<span class="ident">future</span>::<span class="ident">poll_fn</span>, <span class="ident">io</span>::<span class="ident">AsyncRead</span>};
+<span class="kw">use</span> <span class="ident">futures_io</span>::<span class="ident">AsyncRead</span>;
+<span class="kw">use</span> <span class="ident">futures_util</span>::<span class="ident">future</span>::<span class="ident">poll_fn</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{
     <span class="ident">io</span>,
     <span class="ident">pin</span>::<span class="ident">Pin</span>,

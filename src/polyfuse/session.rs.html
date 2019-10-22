@@ -499,8 +499,8 @@
     <span class="ident">op</span>::{<span class="ident">AttrSet</span>, <span class="ident">Context</span>, <span class="ident">Operations</span>},
     <span class="ident">reply</span>::<span class="ident">ReplyRaw</span>,
 };
-<span class="kw">use</span> <span class="ident">futures</span>::{
-    <span class="ident">io</span>::{<span class="ident">AsyncRead</span>, <span class="ident">AsyncWrite</span>},
+<span class="kw">use</span> <span class="ident">futures_io</span>::{<span class="ident">AsyncRead</span>, <span class="ident">AsyncWrite</span>};
+<span class="kw">use</span> <span class="ident">futures_util</span>::{
     <span class="ident">ready</span>,
     <span class="ident">stream</span>::{<span class="ident">FuturesUnordered</span>, <span class="ident">StreamExt</span>},
 };
