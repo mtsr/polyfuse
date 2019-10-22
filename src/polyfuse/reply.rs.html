@@ -655,7 +655,9 @@
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Replies to the kernel.</span>
 
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">abi</span>::{
+<span class="kw">use</span> <span class="ident">futures_io</span>::<span class="ident">AsyncWrite</span>;
+<span class="kw">use</span> <span class="ident">futures_util</span>::<span class="ident">io</span>::<span class="ident">AsyncWriteExt</span>;
+<span class="kw">use</span> <span class="ident">polyfuse_abi</span>::{
     <span class="ident">AttrOut</span>, <span class="comment">//</span>
     <span class="ident">BmapOut</span>,
     <span class="ident">EntryOut</span>,
@@ -671,8 +673,6 @@
     <span class="ident">Unique</span>,
     <span class="ident">WriteOut</span>,
 };
-<span class="kw">use</span> <span class="ident">futures_io</span>::<span class="ident">AsyncWrite</span>;
-<span class="kw">use</span> <span class="ident">futures_util</span>::<span class="ident">io</span>::<span class="ident">AsyncWriteExt</span>;
 <span class="kw">use</span> <span class="ident">smallvec</span>::<span class="ident">SmallVec</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{
     <span class="ident">convert</span>::{<span class="ident">TryFrom</span>, <span class="ident">TryInto</span>},

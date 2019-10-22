@@ -496,30 +496,26 @@
 <span id="496">496</span>
 <span id="497">497</span>
 <span id="498">498</span>
-<span id="499">499</span>
-<span id="500">500</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">needless_lifetimes</span>)]</span>
 
-<span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">abi</span>::{<span class="ident">FileLock</span>, <span class="ident">FileMode</span>, <span class="ident">Gid</span>, <span class="ident">Nodeid</span>, <span class="ident">Pid</span>, <span class="ident">Uid</span>},
-    <span class="ident">reply</span>::{
-        <span class="ident">ReplyAttr</span>, <span class="comment">//</span>
-        <span class="ident">ReplyBmap</span>,
-        <span class="ident">ReplyCreate</span>,
-        <span class="ident">ReplyData</span>,
-        <span class="ident">ReplyEmpty</span>,
-        <span class="ident">ReplyEntry</span>,
-        <span class="ident">ReplyLk</span>,
-        <span class="ident">ReplyOpen</span>,
-        <span class="ident">ReplyOpendir</span>,
-        <span class="ident">ReplyReaddir</span>,
-        <span class="ident">ReplyReadlink</span>,
-        <span class="ident">ReplyStatfs</span>,
-        <span class="ident">ReplyWrite</span>,
-        <span class="ident">ReplyXattr</span>,
-    },
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">reply</span>::{
+    <span class="ident">ReplyAttr</span>, <span class="comment">//</span>
+    <span class="ident">ReplyBmap</span>,
+    <span class="ident">ReplyCreate</span>,
+    <span class="ident">ReplyData</span>,
+    <span class="ident">ReplyEmpty</span>,
+    <span class="ident">ReplyEntry</span>,
+    <span class="ident">ReplyLk</span>,
+    <span class="ident">ReplyOpen</span>,
+    <span class="ident">ReplyOpendir</span>,
+    <span class="ident">ReplyReaddir</span>,
+    <span class="ident">ReplyReadlink</span>,
+    <span class="ident">ReplyStatfs</span>,
+    <span class="ident">ReplyWrite</span>,
+    <span class="ident">ReplyXattr</span>,
 };
+<span class="kw">use</span> <span class="ident">polyfuse_abi</span>::{<span class="ident">FileLock</span>, <span class="ident">FileMode</span>, <span class="ident">Gid</span>, <span class="ident">Nodeid</span>, <span class="ident">Pid</span>, <span class="ident">Uid</span>};
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">future</span>::<span class="ident">Future</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">ffi</span>::<span class="ident">OsStr</span>, <span class="ident">io</span>, <span class="ident">pin</span>::<span class="ident">Pin</span>};
 
