@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["Channel","An evented I/O object that communicates with the FUSE kernel driver."]]});
