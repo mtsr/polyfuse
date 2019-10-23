@@ -236,19 +236,20 @@
 <span id="236">236</span>
 <span id="237">237</span>
 <span id="238">238</span>
-<span id="239">239</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="attribute">#![<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;with-tokio&quot;</span>)]</span>
 <span class="attribute">#![<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;docs&quot;</span>, <span class="ident">doc</span>(<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;with-tokio&quot;</span>)))]</span>
 
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">conn</span>::<span class="ident">Connection</span>, <span class="ident">op</span>::<span class="ident">Operations</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::{
+    <span class="ident">conn</span>::{<span class="ident">Connection</span>, <span class="ident">MountOptions</span>},
+    <span class="ident">op</span>::<span class="ident">Operations</span>,
+};
 <span class="kw">use</span> <span class="ident">futures_io</span>::{<span class="ident">AsyncRead</span>, <span class="ident">AsyncWrite</span>};
 <span class="kw">use</span> <span class="ident">futures_util</span>::{<span class="ident">future</span>::<span class="ident">Future</span>, <span class="ident">ready</span>, <span class="ident">select</span>, <span class="ident">stream</span>::<span class="ident">StreamExt</span>};
 <span class="kw">use</span> <span class="ident">libc</span>::<span class="ident">c_int</span>;
 <span class="kw">use</span> <span class="ident">mio</span>::{<span class="ident">unix</span>::<span class="ident">UnixReady</span>, <span class="ident">Ready</span>};
 <span class="kw">use</span> <span class="ident">std</span>::{
     <span class="ident">cell</span>::<span class="ident">UnsafeCell</span>,
-    <span class="ident">ffi</span>::<span class="ident">OsStr</span>,
     <span class="ident">io</span>::{<span class="self">self</span>, <span class="ident">IoSlice</span>, <span class="ident">IoSliceMut</span>, <span class="ident">Read</span>, <span class="ident">Write</span>},
     <span class="ident">path</span>::{<span class="ident">Path</span>, <span class="ident">PathBuf</span>},
     <span class="ident">pin</span>::<span class="ident">Pin</span>,
@@ -263,9 +264,9 @@
 
 <span class="doccomment">/// Run a FUSE filesystem mounted on the specified path.</span>
 <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">mount</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
-    <span class="ident">mointpoint</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span>,
-    <span class="ident">mountopts</span>: <span class="kw">impl</span> <span class="ident">IntoIterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">OsStr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     <span class="ident">ops</span>: <span class="ident">T</span>,
+    <span class="ident">mointpoint</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span>,
+    <span class="ident">mountopts</span>: <span class="ident">MountOptions</span>,
 ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="kw">for</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Operations</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]<span class="op">&gt;</span>,
@@ -273,7 +274,7 @@
     <span class="kw">let</span> <span class="ident">channel</span> <span class="op">=</span> <span class="ident">Channel</span>::<span class="ident">open</span>(<span class="ident">mointpoint</span>, <span class="ident">mountopts</span>)<span class="question-mark">?</span>;
     <span class="kw">let</span> <span class="ident">sig</span> <span class="op">=</span> <span class="ident">default_shutdown_signal</span>()<span class="question-mark">?</span>;
 
-    <span class="kw">crate</span>::<span class="ident">main_loop</span>(<span class="ident">channel</span>, <span class="ident">sig</span>, <span class="ident">ops</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">crate</span>::<span class="ident">main_loop</span>(<span class="ident">ops</span>, <span class="ident">channel</span>, <span class="ident">sig</span>).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(())
 }
 
@@ -341,10 +342,7 @@
 
 <span class="kw">impl</span> <span class="ident">Channel</span> {
     <span class="doccomment">/// Open a new communication channel mounted to the specified path.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">open</span>(
-        <span class="ident">mountpoint</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span>,
-        <span class="ident">mountopts</span>: <span class="kw">impl</span> <span class="ident">IntoIterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">OsStr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">open</span>(<span class="ident">mountpoint</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span>, <span class="ident">mountopts</span>: <span class="ident">MountOptions</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">mountpoint</span> <span class="op">=</span> <span class="ident">mountpoint</span>.<span class="ident">as_ref</span>();
 
         <span class="kw">let</span> <span class="ident">conn</span> <span class="op">=</span> <span class="ident">Connection</span>::<span class="ident">open</span>(<span class="ident">mountpoint</span>, <span class="ident">mountopts</span>)<span class="question-mark">?</span>;

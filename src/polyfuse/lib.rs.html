@@ -29,6 +29,7 @@
 <span id="29">29</span>
 <span id="30">30</span>
 <span id="31">31</span>
+<span id="32">32</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! FUSE (Filesystem in userspace) framework for Rust.</span>
 
@@ -55,6 +56,7 @@
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">session</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">tokio</span>;
 
+<span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">conn</span>::<span class="ident">MountOptions</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">dir</span>::<span class="ident">DirEntry</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">main_loop</span>::<span class="ident">main_loop</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">op</span>::{<span class="ident">AttrSet</span>, <span class="ident">Context</span>, <span class="ident">Operations</span>};

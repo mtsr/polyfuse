@@ -192,6 +192,18 @@
 <span id="192">192</span>
 <span id="193">193</span>
 <span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="comment">// FIXME: re-enable lint rules</span>
 <span class="attribute">#![<span class="ident">allow</span>(
@@ -209,7 +221,8 @@
     <span class="ident">fuse_unmount_compat22</span>,
 };
 <span class="kw">use</span> <span class="ident">std</span>::{
-    <span class="ident">ffi</span>::{<span class="ident">CString</span>, <span class="ident">OsStr</span>}, <span class="comment">//</span>
+    <span class="ident">env</span>,
+    <span class="ident">ffi</span>::{<span class="ident">CString</span>, <span class="ident">OsString</span>}, <span class="comment">//</span>
     <span class="ident">io</span>::{<span class="self">self</span>, <span class="ident">IoSlice</span>, <span class="ident">IoSliceMut</span>, <span class="ident">Read</span>, <span class="ident">Write</span>},
     <span class="ident">os</span>::<span class="ident">unix</span>::{
         <span class="ident">ffi</span>::<span class="ident">OsStrExt</span>,
@@ -217,6 +230,19 @@
     },
     <span class="ident">path</span>::<span class="ident">Path</span>,
 };
+
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Default</span>)]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MountOptions</span> {
+    <span class="ident">args</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">OsString</span><span class="op">&gt;</span>,
+}
+
+<span class="kw">impl</span> <span class="ident">MountOptions</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_env</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="self">Self</span> {
+            <span class="ident">args</span>: <span class="ident">env</span>::<span class="ident">args_os</span>().<span class="ident">collect</span>(),
+        }
+    }
+}
 
 <span class="doccomment">/// A connection with the FUSE kernel driver.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
@@ -233,16 +259,14 @@
 
 <span class="kw">impl</span> <span class="ident">Connection</span> {
     <span class="doccomment">/// Establish a new connection with the FUSE kernel driver.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">open</span>(
-        <span class="ident">mountpoint</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span>,
-        <span class="ident">mountopts</span>: <span class="kw">impl</span> <span class="ident">IntoIterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">OsStr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">open</span>(<span class="ident">mountpoint</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span>, <span class="ident">mountopts</span>: <span class="ident">MountOptions</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">mountpoint</span> <span class="op">=</span> <span class="ident">mountpoint</span>.<span class="ident">as_ref</span>();
         <span class="kw">let</span> <span class="ident">c_mountpoint</span> <span class="op">=</span> <span class="ident">CString</span>::<span class="ident">new</span>(<span class="ident">mountpoint</span>.<span class="ident">as_os_str</span>().<span class="ident">as_bytes</span>())<span class="question-mark">?</span>;
 
         <span class="kw">let</span> <span class="ident">args</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">CString</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">mountopts</span>
+            .<span class="ident">args</span>
             .<span class="ident">into_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">opt</span><span class="op">|</span> <span class="ident">CString</span>::<span class="ident">new</span>(<span class="ident">opt</span>.<span class="ident">as_ref</span>().<span class="ident">as_bytes</span>()))
+            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">arg</span><span class="op">|</span> <span class="ident">CString</span>::<span class="ident">new</span>(<span class="ident">arg</span>.<span class="ident">as_bytes</span>()))
             .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">c_args</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">*</span><span class="kw">const</span> <span class="ident">c_char</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">args</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">arg</span><span class="op">|</span> <span class="ident">arg</span>.<span class="ident">as_ptr</span>()).<span class="ident">collect</span>();
 

@@ -493,9 +493,6 @@
 <span id="493">493</span>
 <span id="494">494</span>
 <span id="495">495</span>
-<span id="496">496</span>
-<span id="497">497</span>
-<span id="498">498</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">needless_lifetimes</span>)]</span>
 
@@ -509,7 +506,6 @@
     <span class="ident">ReplyLk</span>,
     <span class="ident">ReplyOpen</span>,
     <span class="ident">ReplyOpendir</span>,
-    <span class="ident">ReplyReaddir</span>,
     <span class="ident">ReplyReadlink</span>,
     <span class="ident">ReplyStatfs</span>,
     <span class="ident">ReplyWrite</span>,
@@ -718,7 +714,6 @@
         <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
         <span class="ident">fh</span>: <span class="ident">u64</span>,
         <span class="ident">offset</span>: <span class="ident">u64</span>,
-        <span class="ident">size</span>: <span class="ident">u32</span>,
         <span class="ident">flags</span>: <span class="ident">u32</span>,
         <span class="ident">lock_owner</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>,
         <span class="ident">reply</span>: <span class="ident">ReplyData</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>,
@@ -869,8 +864,7 @@
         <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
         <span class="ident">fh</span>: <span class="ident">u64</span>,
         <span class="ident">offset</span>: <span class="ident">u64</span>,
-        <span class="ident">size</span>: <span class="ident">u32</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyReaddir</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyData</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ImplFuture</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="ident">Box</span>::<span class="ident">pin</span>(<span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>))
     }
