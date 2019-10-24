@@ -661,74 +661,6 @@
 <span id="661">661</span>
 <span id="662">662</span>
 <span id="663">663</span>
-<span id="664">664</span>
-<span id="665">665</span>
-<span id="666">666</span>
-<span id="667">667</span>
-<span id="668">668</span>
-<span id="669">669</span>
-<span id="670">670</span>
-<span id="671">671</span>
-<span id="672">672</span>
-<span id="673">673</span>
-<span id="674">674</span>
-<span id="675">675</span>
-<span id="676">676</span>
-<span id="677">677</span>
-<span id="678">678</span>
-<span id="679">679</span>
-<span id="680">680</span>
-<span id="681">681</span>
-<span id="682">682</span>
-<span id="683">683</span>
-<span id="684">684</span>
-<span id="685">685</span>
-<span id="686">686</span>
-<span id="687">687</span>
-<span id="688">688</span>
-<span id="689">689</span>
-<span id="690">690</span>
-<span id="691">691</span>
-<span id="692">692</span>
-<span id="693">693</span>
-<span id="694">694</span>
-<span id="695">695</span>
-<span id="696">696</span>
-<span id="697">697</span>
-<span id="698">698</span>
-<span id="699">699</span>
-<span id="700">700</span>
-<span id="701">701</span>
-<span id="702">702</span>
-<span id="703">703</span>
-<span id="704">704</span>
-<span id="705">705</span>
-<span id="706">706</span>
-<span id="707">707</span>
-<span id="708">708</span>
-<span id="709">709</span>
-<span id="710">710</span>
-<span id="711">711</span>
-<span id="712">712</span>
-<span id="713">713</span>
-<span id="714">714</span>
-<span id="715">715</span>
-<span id="716">716</span>
-<span id="717">717</span>
-<span id="718">718</span>
-<span id="719">719</span>
-<span id="720">720</span>
-<span id="721">721</span>
-<span id="722">722</span>
-<span id="723">723</span>
-<span id="724">724</span>
-<span id="725">725</span>
-<span id="726">726</span>
-<span id="727">727</span>
-<span id="728">728</span>
-<span id="729">729</span>
-<span id="730">730</span>
-<span id="731">731</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! FUSE session driver.</span>
 
@@ -737,22 +669,13 @@
     <span class="ident">fs</span>::{<span class="ident">Context</span>, <span class="ident">Filesystem</span>, <span class="ident">Operation</span>},
     <span class="ident">reply</span>::{<span class="ident">ReplyData</span>, <span class="ident">ReplyRaw</span>},
 };
+<span class="kw">use</span> <span class="ident">futures_channel</span>::<span class="ident">oneshot</span>;
 <span class="kw">use</span> <span class="ident">futures_io</span>::{<span class="ident">AsyncRead</span>, <span class="ident">AsyncWrite</span>};
-<span class="kw">use</span> <span class="ident">futures_util</span>::{
-    <span class="ident">ready</span>,
-    <span class="ident">stream</span>::{<span class="ident">FuturesUnordered</span>, <span class="ident">StreamExt</span>},
-};
 <span class="kw">use</span> <span class="ident">polyfuse_abi</span>::{
     <span class="ident">parse</span>::{<span class="ident">Arg</span>, <span class="ident">Request</span>},
     <span class="ident">InitOut</span>, <span class="ident">LkFlags</span>, <span class="ident">LockType</span>, <span class="ident">ReleaseFlags</span>, <span class="ident">Unique</span>,
 };
-<span class="kw">use</span> <span class="ident">std</span>::{
-    <span class="ident">fmt</span>,
-    <span class="ident">future</span>::<span class="ident">Future</span>,
-    <span class="ident">io</span>,
-    <span class="ident">pin</span>::<span class="ident">Pin</span>,
-    <span class="ident">task</span>::{<span class="self">self</span>, <span class="ident">Poll</span>},
-};
+<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">collections</span>::<span class="ident">HashMap</span>, <span class="ident">io</span>};
 
 <span class="doccomment">/// A FUSE filesystem driver.</span>
 <span class="doccomment">///</span>
@@ -796,7 +719,7 @@
 
     <span class="doccomment">/// Dispatch an incoming request to the provided operations.</span>
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">cognitive_complexity</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">dispatch</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">T</span><span class="op">&gt;</span>(
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">process</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">T</span><span class="op">&gt;</span>(
         <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
         <span class="ident">buffer</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Buffer</span>,
         <span class="ident">channel</span>: <span class="kw-2">&amp;</span><span class="ident">I</span>,
@@ -823,60 +746,59 @@
 
         <span class="kw">let</span> <span class="ident">ino</span> <span class="op">=</span> <span class="ident">header</span>.<span class="ident">nodeid</span>;
         <span class="kw">let</span> <span class="ident">unique</span> <span class="op">=</span> <span class="ident">header</span>.<span class="ident">unique</span>;
-        <span class="kw">let</span> <span class="ident">cx</span> <span class="op">=</span> <span class="ident">Context</span> {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cx</span> <span class="op">=</span> <span class="ident">Context</span> {
             <span class="ident">uid</span>: <span class="ident">header</span>.<span class="ident">uid</span>,
             <span class="ident">gid</span>: <span class="ident">header</span>.<span class="ident">gid</span>,
             <span class="ident">pid</span>: <span class="ident">header</span>.<span class="ident">pid</span>,
+            <span class="ident">background</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw-2">*</span><span class="ident">background</span>,
+            <span class="ident">unique</span>,
         };
         <span class="kw">let</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">ReplyRaw</span>::<span class="ident">new</span>(<span class="ident">unique</span>, <span class="ident">channel</span>.<span class="ident">clone</span>());
 
         <span class="kw">match</span> <span class="ident">arg</span> {
             <span class="ident">Arg</span>::<span class="ident">Init</span> { .. } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;&quot;</span>);
-                <span class="ident">background</span>.<span class="ident">spawn_task</span>(<span class="ident">unique</span>, <span class="ident">reply</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">EIO</span>));
+                <span class="ident">reply</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">EIO</span>).<span class="kw">await</span><span class="question-mark">?</span>;
             }
             <span class="ident">Arg</span>::<span class="ident">Destroy</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="self">self</span>.<span class="ident">exit</span>();
-                <span class="ident">background</span>.<span class="ident">spawn_task</span>(<span class="ident">unique</span>, <span class="ident">reply</span>.<span class="ident">reply</span>(<span class="number">0</span>, <span class="kw-2">&amp;</span>[]));
+                <span class="ident">reply</span>.<span class="ident">reply</span>(<span class="number">0</span>, <span class="kw-2">&amp;</span>[]).<span class="kw">await</span><span class="question-mark">?</span>;
             }
-            <span class="ident">Arg</span>::<span class="ident">Lookup</span> { <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+            <span class="ident">Arg</span>::<span class="ident">Lookup</span> { <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Lookup</span> {
                         <span class="ident">parent</span>: <span class="ident">ino</span>,
                         <span class="ident">name</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
             <span class="ident">Arg</span>::<span class="ident">Forget</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="comment">// no reply.</span>
-                <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                    <span class="ident">unique</span>,
-                    <span class="ident">fs</span>.<span class="ident">call</span>(
-                        <span class="kw-2">&amp;</span><span class="ident">cx</span>,
-                        <span class="ident">Operation</span>::<span class="ident">Forget</span> {
-                            <span class="ident">nlookups</span>: <span class="kw-2">&amp;</span>[(<span class="ident">ino</span>, <span class="ident">arg</span>.<span class="ident">nlookup</span>)],
-                        },
-                    ),
-                );
-            }
-            <span class="ident">Arg</span>::<span class="ident">Getattr</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
+                    <span class="ident">Operation</span>::<span class="ident">Forget</span> {
+                        <span class="ident">nlookups</span>: <span class="kw-2">&amp;</span>[(<span class="ident">ino</span>, <span class="ident">arg</span>.<span class="ident">nlookup</span>)],
+                    },
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Getattr</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="ident">fs</span>.<span class="ident">call</span>(
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Getattr</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>(),
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Setattr</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Setattr</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Setattr</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>(),
@@ -890,34 +812,34 @@
                         <span class="ident">lock_owner</span>: <span class="ident">arg</span>.<span class="ident">lock_owner</span>(),
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Readlink</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Readlink</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Readlink</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Symlink</span> { <span class="ident">name</span>, <span class="ident">link</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Symlink</span> { <span class="ident">name</span>, <span class="ident">link</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Symlink</span> {
                         <span class="ident">parent</span>: <span class="ident">ino</span>,
                         <span class="ident">name</span>,
                         <span class="ident">link</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Mknod</span> { <span class="ident">arg</span>, <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Mknod</span> { <span class="ident">arg</span>, <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Mknod</span> {
                         <span class="ident">parent</span>: <span class="ident">ino</span>,
                         <span class="ident">name</span>,
@@ -926,12 +848,12 @@
                         <span class="ident">umask</span>: <span class="prelude-val">Some</span>(<span class="ident">arg</span>.<span class="ident">umask</span>),
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Mkdir</span> { <span class="ident">arg</span>, <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Mkdir</span> { <span class="ident">arg</span>, <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Mkdir</span> {
                         <span class="ident">parent</span>: <span class="ident">ino</span>,
                         <span class="ident">name</span>,
@@ -939,34 +861,34 @@
                         <span class="ident">umask</span>: <span class="prelude-val">Some</span>(<span class="ident">arg</span>.<span class="ident">umask</span>),
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Unlink</span> { <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Unlink</span> { <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Unlink</span> {
                         <span class="ident">parent</span>: <span class="ident">ino</span>,
                         <span class="ident">name</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Rmdir</span> { <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Rmdir</span> { <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Rmdir</span> {
                         <span class="ident">parent</span>: <span class="ident">ino</span>,
                         <span class="ident">name</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Rename</span> { <span class="ident">arg</span>, <span class="ident">name</span>, <span class="ident">newname</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Rename</span> { <span class="ident">arg</span>, <span class="ident">name</span>, <span class="ident">newname</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Rename</span> {
                         <span class="ident">parent</span>: <span class="ident">ino</span>,
                         <span class="ident">name</span>,
@@ -975,35 +897,35 @@
                         <span class="ident">flags</span>: <span class="number">0</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Link</span> { <span class="ident">arg</span>, <span class="ident">newname</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Link</span> { <span class="ident">arg</span>, <span class="ident">newname</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Link</span> {
                         <span class="ident">ino</span>: <span class="ident">arg</span>.<span class="ident">oldnodeid</span>,
                         <span class="ident">newparent</span>: <span class="ident">ino</span>,
                         <span class="ident">newname</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Open</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Open</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Open</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">flags</span>: <span class="ident">arg</span>.<span class="ident">flags</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Read</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Read</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Read</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
@@ -1012,13 +934,13 @@
                         <span class="ident">lock_owner</span>: <span class="ident">arg</span>.<span class="ident">lock_owner</span>(),
                         <span class="ident">reply</span>: <span class="ident">ReplyData</span>::<span class="ident">new</span>(<span class="ident">reply</span>, <span class="ident">arg</span>.<span class="ident">size</span>),
                     },
-                ),
-            ),
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
             <span class="ident">Arg</span>::<span class="ident">Write</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="kw">match</span> <span class="ident">data</span> {
-                <span class="prelude-val">Some</span>(<span class="ident">data</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                    <span class="ident">unique</span>,
+                <span class="prelude-val">Some</span>(<span class="ident">data</span>) <span class="op">=</span><span class="op">&gt;</span> {
                     <span class="ident">fs</span>.<span class="ident">call</span>(
-                        <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                        <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                         <span class="ident">Operation</span>::<span class="ident">Write</span> {
                             <span class="ident">ino</span>,
                             <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
@@ -1029,8 +951,9 @@
                             <span class="ident">lock_owner</span>: <span class="ident">arg</span>.<span class="ident">lock_owner</span>(),
                             <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                         },
-                    ),
-                ),
+                    )
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
+                }
                 <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;unexpected condition&quot;</span>),
             },
             <span class="ident">Arg</span>::<span class="ident">Release</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
@@ -1045,48 +968,45 @@
                     <span class="ident">flock_release</span> <span class="op">=</span> <span class="bool-val">true</span>;
                     <span class="ident">lock_owner</span>.<span class="ident">get_or_insert_with</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">arg</span>.<span class="ident">lock_owner</span>);
                 }
-                <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                    <span class="ident">unique</span>,
-                    <span class="ident">fs</span>.<span class="ident">call</span>(
-                        <span class="kw-2">&amp;</span><span class="ident">cx</span>,
-                        <span class="ident">Operation</span>::<span class="ident">Release</span> {
-                            <span class="ident">ino</span>,
-                            <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
-                            <span class="ident">flags</span>: <span class="ident">arg</span>.<span class="ident">flags</span>,
-                            <span class="ident">lock_owner</span>,
-                            <span class="ident">flush</span>,
-                            <span class="ident">flock_release</span>,
-                            <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
-                        },
-                    ),
-                )
-            }
-            <span class="ident">Arg</span>::<span class="ident">Statfs</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
+                    <span class="ident">Operation</span>::<span class="ident">Release</span> {
+                        <span class="ident">ino</span>,
+                        <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
+                        <span class="ident">flags</span>: <span class="ident">arg</span>.<span class="ident">flags</span>,
+                        <span class="ident">lock_owner</span>,
+                        <span class="ident">flush</span>,
+                        <span class="ident">flock_release</span>,
+                        <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
+                    },
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Statfs</span> <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="ident">fs</span>.<span class="ident">call</span>(
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Statfs</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Fsync</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Fsync</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Fsync</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
                         <span class="ident">datasync</span>: <span class="ident">arg</span>.<span class="ident">datasync</span>(),
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Setxattr</span> { <span class="ident">arg</span>, <span class="ident">name</span>, <span class="ident">value</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Setxattr</span> { <span class="ident">arg</span>, <span class="ident">name</span>, <span class="ident">value</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Setxattr</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">name</span>,
@@ -1094,105 +1014,105 @@
                         <span class="ident">flags</span>: <span class="ident">arg</span>.<span class="ident">flags</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Getxattr</span> { <span class="ident">arg</span>, <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Getxattr</span> { <span class="ident">arg</span>, <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Getxattr</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">name</span>,
                         <span class="ident">size</span>: <span class="ident">arg</span>.<span class="ident">size</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Listxattr</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Listxattr</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Listxattr</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">size</span>: <span class="ident">arg</span>.<span class="ident">size</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Removexattr</span> { <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Removexattr</span> { <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Removexattr</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">name</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Flush</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Flush</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Flush</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
                         <span class="ident">lock_owner</span>: <span class="ident">arg</span>.<span class="ident">lock_owner</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Opendir</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Opendir</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Opendir</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">flags</span>: <span class="ident">arg</span>.<span class="ident">flags</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Readdir</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Readdir</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Readdir</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
                         <span class="ident">offset</span>: <span class="ident">arg</span>.<span class="ident">offset</span>,
                         <span class="ident">reply</span>: <span class="ident">ReplyData</span>::<span class="ident">new</span>(<span class="ident">reply</span>, <span class="ident">arg</span>.<span class="ident">size</span>),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Releasedir</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Releasedir</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Releasedir</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
                         <span class="ident">flags</span>: <span class="ident">arg</span>.<span class="ident">flags</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Fsyncdir</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Fsyncdir</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Fsyncdir</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
                         <span class="ident">datasync</span>: <span class="ident">arg</span>.<span class="ident">datasync</span>(),
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Getlk</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Getlk</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Getlk</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
@@ -1200,8 +1120,9 @@
                         <span class="ident">lk</span>: <span class="kw-2">&amp;</span><span class="ident">arg</span>.<span class="ident">lk</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
             <span class="ident">Arg</span>::<span class="ident">Setlk</span> { <span class="ident">arg</span>, <span class="ident">sleep</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">if</span> <span class="ident">arg</span>.<span class="ident">lk_flags</span>.<span class="ident">contains</span>(<span class="ident">LkFlags</span>::<span class="ident">FLOCK</span>) {
                     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">cast_possible_wrap</span>)]</span>
@@ -1213,51 +1134,46 @@
                     <span class="kw">if</span> <span class="op">!</span><span class="ident">sleep</span> {
                         <span class="ident">op</span> <span class="op">|</span><span class="op">=</span> <span class="ident">libc</span>::<span class="ident">LOCK_NB</span> <span class="kw">as</span> <span class="ident">u32</span>;
                     }
-                    <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                        <span class="ident">unique</span>,
-                        <span class="ident">fs</span>.<span class="ident">call</span>(
-                            <span class="kw-2">&amp;</span><span class="ident">cx</span>,
-                            <span class="ident">Operation</span>::<span class="ident">Flock</span> {
-                                <span class="ident">ino</span>,
-                                <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
-                                <span class="ident">owner</span>: <span class="ident">arg</span>.<span class="ident">owner</span>,
-                                <span class="ident">op</span>,
-                                <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
-                            },
-                        ),
+                    <span class="ident">fs</span>.<span class="ident">call</span>(
+                        <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
+                        <span class="ident">Operation</span>::<span class="ident">Flock</span> {
+                            <span class="ident">ino</span>,
+                            <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
+                            <span class="ident">owner</span>: <span class="ident">arg</span>.<span class="ident">owner</span>,
+                            <span class="ident">op</span>,
+                            <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
+                        },
                     )
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
                 } <span class="kw">else</span> {
-                    <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                        <span class="ident">unique</span>,
-                        <span class="ident">fs</span>.<span class="ident">call</span>(
-                            <span class="kw-2">&amp;</span><span class="ident">cx</span>,
-                            <span class="ident">Operation</span>::<span class="ident">Setlk</span> {
-                                <span class="ident">ino</span>,
-                                <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
-                                <span class="ident">owner</span>: <span class="ident">arg</span>.<span class="ident">owner</span>,
-                                <span class="ident">lk</span>: <span class="kw-2">&amp;</span><span class="ident">arg</span>.<span class="ident">lk</span>,
-                                <span class="ident">sleep</span>,
-                                <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
-                            },
-                        ),
+                    <span class="ident">fs</span>.<span class="ident">call</span>(
+                        <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
+                        <span class="ident">Operation</span>::<span class="ident">Setlk</span> {
+                            <span class="ident">ino</span>,
+                            <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
+                            <span class="ident">owner</span>: <span class="ident">arg</span>.<span class="ident">owner</span>,
+                            <span class="ident">lk</span>: <span class="kw-2">&amp;</span><span class="ident">arg</span>.<span class="ident">lk</span>,
+                            <span class="ident">sleep</span>,
+                            <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
+                        },
                     )
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
                 }
             }
-            <span class="ident">Arg</span>::<span class="ident">Access</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+            <span class="ident">Arg</span>::<span class="ident">Access</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Access</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">mask</span>: <span class="ident">arg</span>.<span class="ident">mask</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
-            <span class="ident">Arg</span>::<span class="ident">Create</span> { <span class="ident">arg</span>, <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">Arg</span>::<span class="ident">Create</span> { <span class="ident">arg</span>, <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Create</span> {
                         <span class="ident">parent</span>: <span class="ident">ino</span>,
                         <span class="ident">name</span>,
@@ -1266,24 +1182,25 @@
                         <span class="ident">open_flags</span>: <span class="ident">arg</span>.<span class="ident">flags</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
             <span class="ident">Arg</span>::<span class="ident">Interrupt</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;INTERRUPT (unique = {:?})&quot;</span>, <span class="ident">arg</span>.<span class="ident">unique</span>);
-                <span class="ident">background</span>.<span class="ident">cancel_task</span>(<span class="ident">arg</span>.<span class="ident">unique</span>);
+                <span class="ident">background</span>.<span class="ident">cancel</span>(<span class="ident">arg</span>.<span class="ident">unique</span>);
             }
-            <span class="ident">Arg</span>::<span class="ident">Bmap</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">background</span>.<span class="ident">spawn_task</span>(
-                <span class="ident">unique</span>,
+            <span class="ident">Arg</span>::<span class="ident">Bmap</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">fs</span>.<span class="ident">call</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">cx</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Bmap</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">block</span>: <span class="ident">arg</span>.<span class="ident">block</span>,
                         <span class="ident">blocksize</span>: <span class="ident">arg</span>.<span class="ident">blocksize</span>,
                         <span class="ident">reply</span>: <span class="ident">reply</span>.<span class="ident">into</span>(),
                     },
-                ),
-            ),
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
 
             <span class="comment">// Ioctl,</span>
             <span class="comment">// Poll,</span>
@@ -1296,7 +1213,7 @@
             <span class="comment">// CopyFileRange,</span>
             <span class="ident">Arg</span>::<span class="ident">Unknown</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;unsupported opcode: {:?}&quot;</span>, <span class="ident">header</span>.<span class="ident">opcode</span>);
-                <span class="ident">background</span>.<span class="ident">spawn_task</span>(<span class="ident">unique</span>, <span class="ident">reply</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>));
+                <span class="ident">reply</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span><span class="question-mark">?</span>;
             }
         }
 
@@ -1380,7 +1297,7 @@
 <span class="doccomment">/// A pool for tracking the execution of tasks spawned for each FUSE request.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Background</span> {
-    <span class="ident">tasks</span>: <span class="ident">FuturesUnordered</span><span class="op">&lt;</span><span class="ident">BackgroundTask</span><span class="op">&gt;</span>,
+    <span class="ident">remains</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">Unique</span>, <span class="ident">oneshot</span>::<span class="ident">Sender</span><span class="op">&lt;</span>()<span class="op">&gt;</span><span class="op">&gt;</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">Background</span> {
@@ -1392,72 +1309,19 @@
 <span class="kw">impl</span> <span class="ident">Background</span> {
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="self">Self</span> {
-            <span class="ident">tasks</span>: <span class="ident">FuturesUnordered</span>::<span class="ident">new</span>(),
+            <span class="ident">remains</span>: <span class="ident">HashMap</span>::<span class="ident">new</span>(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">num_remains</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">tasks</span>.<span class="ident">len</span>()
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">register</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">unique</span>: <span class="ident">Unique</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">oneshot</span>::<span class="ident">Receiver</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) <span class="op">=</span> <span class="ident">oneshot</span>::<span class="ident">channel</span>();
+        <span class="self">self</span>.<span class="ident">remains</span>.<span class="ident">insert</span>(<span class="ident">unique</span>, <span class="ident">tx</span>);
+        <span class="ident">rx</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">spawn_task</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">unique</span>: <span class="ident">Unique</span>, <span class="ident">fut</span>: <span class="ident">T</span>)
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
-    {
-        <span class="self">self</span>.<span class="ident">tasks</span>.<span class="ident">push</span>(<span class="ident">BackgroundTask</span> {
-            <span class="ident">unique</span>,
-            <span class="ident">fut</span>: <span class="prelude-val">Some</span>(<span class="ident">Box</span>::<span class="ident">pin</span>(<span class="ident">fut</span>)),
-        });
-    }
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">cancel_task</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">unique</span>: <span class="ident">Unique</span>) {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">task</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">tasks</span>.<span class="ident">iter_mut</span>().<span class="ident">find</span>(<span class="op">|</span><span class="ident">task</span><span class="op">|</span> <span class="ident">task</span>.<span class="ident">unique</span>() <span class="op">=</span><span class="op">=</span> <span class="ident">unique</span>) {
-            <span class="ident">task</span>.<span class="ident">cancel</span>();
-        }
-    }
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">poll_tasks</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">task</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">res</span>) <span class="op">=</span> <span class="macro">ready</span><span class="macro">!</span>(<span class="self">self</span>.<span class="ident">tasks</span>.<span class="ident">poll_next_unpin</span>(<span class="ident">cx</span>)) {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">res</span> {
-                <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>));
-            }
-        }
-        <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Ok</span>(()))
-    }
-}
-
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BackgroundTask</span> {
-    <span class="ident">fut</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">unique</span>: <span class="ident">Unique</span>,
-}
-
-<span class="kw">impl</span> <span class="ident">fmt</span>::<span class="ident">Debug</span> <span class="kw">for</span> <span class="ident">BackgroundTask</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt</span>::<span class="ident">Formatter</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">fmt</span>::<span class="prelude-ty">Result</span> {
-        <span class="ident">f</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;BackgroundTask&quot;</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;unique&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">unique</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;canceled&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">fut</span>.<span class="ident">is_none</span>())
-            .<span class="ident">finish</span>()
-    }
-}
-
-<span class="kw">impl</span> <span class="ident">BackgroundTask</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">unique</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Unique</span> {
-        <span class="self">self</span>.<span class="ident">unique</span>
-    }
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">cancel</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
-        <span class="ident">drop</span>(<span class="self">self</span>.<span class="ident">fut</span>.<span class="ident">take</span>());
-    }
-}
-
-<span class="kw">impl</span> <span class="ident">Future</span> <span class="kw">for</span> <span class="ident">BackgroundTask</span> {
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>;
-
-    <span class="kw">fn</span> <span class="ident">poll</span>(<span class="kw-2">mut</span> <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">task</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Output</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">this</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw-2">*</span><span class="self">self</span>;
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">this</span>.<span class="ident">fut</span> {
-            <span class="prelude-val">Some</span>(<span class="ident">fut</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">fut</span>.<span class="ident">as_mut</span>().<span class="ident">poll</span>(<span class="ident">cx</span>),
-            <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Ok</span>(())),
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">cancel</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">unique</span>: <span class="ident">Unique</span>) {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">remains</span>.<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">unique</span>) {
+            <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">tx</span>.<span class="ident">send</span>(());
         }
     }
 }
