@@ -45,19 +45,19 @@
     <span class="ident">clippy</span>::<span class="ident">unimplemented</span>
 )]</span>
 
+<span class="kw">mod</span> <span class="ident">channel</span>;
 <span class="kw">mod</span> <span class="ident">conn</span>;
 <span class="kw">mod</span> <span class="ident">dir</span>;
-<span class="kw">mod</span> <span class="ident">main_loop</span>;
+<span class="kw">mod</span> <span class="ident">run</span>;
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">buf</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">fs</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">reply</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">session</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">tokio</span>;
 
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">conn</span>::<span class="ident">MountOptions</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">dir</span>::<span class="ident">DirEntry</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">main_loop</span>::<span class="ident">main_loop</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">run</span>::{<span class="ident">mount</span>, <span class="ident">run</span>};
 
 <span class="comment">// re-exports from polyfuse-abi</span>
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">polyfuse_abi</span>::{<span class="ident">FileAttr</span>, <span class="ident">FileLock</span>, <span class="ident">FileMode</span>, <span class="ident">Gid</span>, <span class="ident">Nodeid</span>, <span class="ident">Pid</span>, <span class="ident">Statfs</span>, <span class="ident">Uid</span>};
