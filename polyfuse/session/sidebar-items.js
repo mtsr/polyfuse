@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["InitSession","Session initializer."],["Session","A FUSE filesystem driver."]]});

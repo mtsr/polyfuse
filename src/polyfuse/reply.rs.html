@@ -658,6 +658,8 @@
 <span id="658">658</span>
 <span id="659">659</span>
 <span id="660">660</span>
+<span id="661">661</span>
+<span id="662">662</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Replies to the kernel.</span>
 
@@ -689,6 +691,8 @@
     <span class="ident">os</span>::<span class="ident">unix</span>::<span class="ident">ffi</span>::<span class="ident">OsStrExt</span>,
     <span class="ident">pin</span>::<span class="ident">Pin</span>,
 };
+
+<span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">dir</span>::<span class="ident">DirEntry</span>;
 
 <span class="doccomment">/// A base object to send a reply to the kernel.</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ReplyRaw</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
