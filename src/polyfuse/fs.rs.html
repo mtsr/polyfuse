@@ -403,12 +403,6 @@
 <span id="403">403</span>
 <span id="404">404</span>
 <span id="405">405</span>
-<span id="406">406</span>
-<span id="407">407</span>
-<span id="408">408</span>
-<span id="409">409</span>
-<span id="410">410</span>
-<span id="411">411</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Filesystem abstraction.</span>
 
@@ -427,7 +421,11 @@
     <span class="ident">ReplyWrite</span>,
     <span class="ident">ReplyXattr</span>,
 };
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">ffi</span>::<span class="ident">OsStr</span>, <span class="ident">io</span>};
+<span class="kw">use</span> <span class="ident">futures_io</span>::<span class="ident">AsyncWrite</span>;
+<span class="kw">use</span> <span class="ident">futures_util</span>::<span class="ident">io</span>::<span class="ident">AsyncWriteExt</span>;
+<span class="kw">use</span> <span class="ident">polyfuse_abi</span>::{<span class="ident">InHeader</span>, <span class="ident">OutHeader</span>};
+<span class="kw">use</span> <span class="ident">smallvec</span>::<span class="ident">SmallVec</span>;
+<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">convert</span>::<span class="ident">TryFrom</span>, <span class="ident">ffi</span>::<span class="ident">OsStr</span>, <span class="ident">fmt</span>, <span class="ident">io</span>, <span class="ident">io</span>::<span class="ident">IoSlice</span>};
 
 <span class="comment">// re-exports from polyfuse-abi</span>
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">polyfuse_abi</span>::{<span class="ident">FileAttr</span>, <span class="ident">FileLock</span>, <span class="ident">FileMode</span>, <span class="ident">Gid</span>, <span class="ident">Nodeid</span>, <span class="ident">Pid</span>, <span class="ident">Statfs</span>, <span class="ident">Uid</span>};
@@ -435,39 +433,76 @@
 <span class="doccomment">/// The filesystem running on the user space.</span>
 <span class="attribute">#[<span class="ident">async_trait</span>::<span class="ident">async_trait</span>(<span class="question-mark">?</span><span class="ident">Send</span>)]</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Handle a FUSE request from the kernel and reply its result.</span>
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
+    <span class="doccomment">/// Handle a FUSE request from the kernel and reply with its result.</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">call</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>, <span class="ident">op</span>: <span class="ident">Operation</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">T</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="ident">T</span>: <span class="lifetime">&#39;async_trait</span>, <span class="comment">// https://github.com/dtolnay/async-trait/issues/8</span>
     {
-        <span class="ident">op</span>.<span class="ident">reply_default</span>().<span class="kw">await</span>
+        <span class="ident">drop</span>(<span class="ident">op</span>);
+        <span class="ident">cx</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span>
     }
 }
 
 <span class="doccomment">/// Contextural information about an incoming request.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">uid</span>: <span class="ident">Uid</span>,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">gid</span>: <span class="ident">Gid</span>,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">pid</span>: <span class="ident">Pid</span>,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">_anchor</span>: <span class="ident">std</span>::<span class="ident">marker</span>::<span class="ident">PhantomData</span><span class="op">&lt;</span><span class="kw">fn</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> ()) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> ()<span class="op">&gt;</span>,
+    <span class="ident">header</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">InHeader</span>,
+    <span class="ident">writer</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> (<span class="kw">dyn</span> <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>),
 }
 
-<span class="kw">impl</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+<span class="kw">impl</span> <span class="ident">fmt</span>::<span class="ident">Debug</span> <span class="kw">for</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt</span>::<span class="ident">Formatter</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">fmt</span>::<span class="prelude-ty">Result</span> {
+        <span class="ident">f</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;Context&quot;</span>).<span class="ident">finish</span>()
+    }
+}
+
+<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">header</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">InHeader</span>, <span class="ident">writer</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> (<span class="kw">impl</span> <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>)) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="self">Self</span> { <span class="ident">header</span>, <span class="ident">writer</span> }
+    }
+
     <span class="doccomment">/// Return the user ID of the calling process.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">uid</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Uid</span> {
-        <span class="self">self</span>.<span class="ident">uid</span>
+        <span class="self">self</span>.<span class="ident">header</span>.<span class="ident">uid</span>
     }
 
     <span class="doccomment">/// Return the group ID of the calling process.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">gid</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Gid</span> {
-        <span class="self">self</span>.<span class="ident">gid</span>
+        <span class="self">self</span>.<span class="ident">header</span>.<span class="ident">gid</span>
     }
 
     <span class="doccomment">/// Return the process ID of the calling process.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">pid</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Pid</span> {
-        <span class="self">self</span>.<span class="ident">pid</span>
+        <span class="self">self</span>.<span class="ident">header</span>.<span class="ident">pid</span>
+    }
+
+    <span class="doccomment">/// Reply to the kernel with an error code.</span>
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">reply_err</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">error</span>: <span class="ident">i32</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="self">self</span>.<span class="ident">send_reply</span>(<span class="ident">error</span>, <span class="kw-2">&amp;</span>[]).<span class="kw">await</span>
+    }
+
+    <span class="doccomment">/// Reply to the kernel with the specified data.</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">send_reply</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">error</span>: <span class="ident">i32</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>[<span class="ident">u8</span>]]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="kw">let</span> <span class="ident">data_len</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">data</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> <span class="ident">t</span>.<span class="ident">len</span>()).<span class="ident">sum</span>();
+
+        <span class="kw">let</span> <span class="ident">out_header</span> <span class="op">=</span> <span class="ident">OutHeader</span> {
+            <span class="ident">unique</span>: <span class="self">self</span>.<span class="ident">header</span>.<span class="ident">unique</span>,
+            <span class="ident">error</span>: <span class="op">-</span><span class="ident">error</span>,
+            <span class="ident">len</span>: <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">std</span>::<span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">OutHeader</span><span class="op">&gt;</span>() <span class="op">+</span> <span class="ident">data_len</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
+                <span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(
+                    <span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>,
+                    <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;the total length of data is too long: {}&quot;</span>, <span class="ident">e</span>),
+                )
+            })<span class="question-mark">?</span>,
+        };
+
+        <span class="kw">let</span> <span class="ident">vec</span>: <span class="ident">SmallVec</span><span class="op">&lt;</span>[<span class="kw">_</span>; <span class="number">4</span>]<span class="op">&gt;</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">IoSlice</span>::<span class="ident">new</span>(<span class="ident">out_header</span>.<span class="ident">as_ref</span>()))
+            .<span class="ident">into_iter</span>()
+            .<span class="ident">chain</span>(<span class="ident">data</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> <span class="ident">IoSlice</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">t</span>)))
+            .<span class="ident">collect</span>();
+
+        (<span class="kw-2">*</span><span class="self">self</span>.<span class="ident">writer</span>).<span class="ident">write_vectored</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">vec</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(())
     }
 }
 
@@ -478,7 +513,7 @@
     <span class="ident">Lookup</span> {
         <span class="ident">parent</span>: <span class="ident">Nodeid</span>,
         <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEntry</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEntry</span>,
     },
 
     <span class="doccomment">/// Forget about inodes removed from the kernel&#39;s internal caches.</span>
@@ -490,7 +525,7 @@
     <span class="ident">Getattr</span> {
         <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
         <span class="ident">fh</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyAttr</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyAttr</span>,
     },
 
     <span class="doccomment">/// Set file attributes.</span>
@@ -505,21 +540,18 @@
         <span class="ident">mtime</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">u64</span>, <span class="ident">u32</span>, <span class="ident">bool</span>)<span class="op">&gt;</span>,
         <span class="ident">ctime</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">u64</span>, <span class="ident">u32</span>)<span class="op">&gt;</span>,
         <span class="ident">lock_owner</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyAttr</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyAttr</span>,
     },
 
     <span class="doccomment">/// Read a symbolic link.</span>
-    <span class="ident">Readlink</span> {
-        <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyReadlink</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
-    },
+    <span class="ident">Readlink</span> { <span class="ident">ino</span>: <span class="ident">Nodeid</span>, <span class="ident">reply</span>: <span class="ident">ReplyReadlink</span> },
 
     <span class="doccomment">/// Create a symbolic link</span>
     <span class="ident">Symlink</span> {
         <span class="ident">parent</span>: <span class="ident">Nodeid</span>,
         <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span>,
         <span class="ident">link</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEntry</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEntry</span>,
     },
 
     <span class="doccomment">/// Create a file node.</span>
@@ -529,7 +561,7 @@
         <span class="ident">mode</span>: <span class="ident">FileMode</span>,
         <span class="ident">rdev</span>: <span class="ident">u32</span>,
         <span class="ident">umask</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEntry</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEntry</span>,
     },
 
     <span class="doccomment">/// Create a directory.</span>
@@ -538,21 +570,21 @@
         <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span>,
         <span class="ident">mode</span>: <span class="ident">FileMode</span>,
         <span class="ident">umask</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEntry</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEntry</span>,
     },
 
     <span class="doccomment">/// Remove a file.</span>
     <span class="ident">Unlink</span> {
         <span class="ident">parent</span>: <span class="ident">Nodeid</span>,
         <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>,
     },
 
     <span class="doccomment">/// Remove a directory.</span>
     <span class="ident">Rmdir</span> {
         <span class="ident">parent</span>: <span class="ident">Nodeid</span>,
         <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>,
     },
 
     <span class="doccomment">/// Rename a file.</span>
@@ -562,7 +594,7 @@
         <span class="ident">newparent</span>: <span class="ident">Nodeid</span>,
         <span class="ident">newname</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span>,
         <span class="ident">flags</span>: <span class="ident">u32</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>,
     },
 
     <span class="doccomment">/// Create a hard link.</span>
@@ -570,14 +602,14 @@
         <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
         <span class="ident">newparent</span>: <span class="ident">Nodeid</span>,
         <span class="ident">newname</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEntry</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEntry</span>,
     },
 
     <span class="doccomment">/// Open a file.</span>
     <span class="ident">Open</span> {
         <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
         <span class="ident">flags</span>: <span class="ident">u32</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyOpen</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyOpen</span>,
     },
 
     <span class="doccomment">/// Read data from an opened file.</span>
@@ -587,7 +619,7 @@
         <span class="ident">offset</span>: <span class="ident">u64</span>,
         <span class="ident">flags</span>: <span class="ident">u32</span>,
         <span class="ident">lock_owner</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyData</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyData</span>,
     },
 
     <span class="doccomment">/// Write data to an opened file.</span>
@@ -599,7 +631,7 @@
         <span class="ident">size</span>: <span class="ident">u32</span>,
         <span class="ident">flags</span>: <span class="ident">u32</span>,
         <span class="ident">lock_owner</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyWrite</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyWrite</span>,
     },
 
     <span class="doccomment">/// Release an opened file.</span>
@@ -610,14 +642,11 @@
         <span class="ident">lock_owner</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>,
         <span class="ident">flush</span>: <span class="ident">bool</span>,
         <span class="ident">flock_release</span>: <span class="ident">bool</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>,
     },
 
     <span class="doccomment">/// Get the filesystem statistics.</span>
-    <span class="ident">Statfs</span> {
-        <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyStatfs</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
-    },
+    <span class="ident">Statfs</span> { <span class="ident">ino</span>: <span class="ident">Nodeid</span>, <span class="ident">reply</span>: <span class="ident">ReplyStatfs</span> },
 
     <span class="doccomment">/// Synchronize the file contents of an opened file.</span>
     <span class="doccomment">///</span>
@@ -628,7 +657,7 @@
         <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
         <span class="ident">fh</span>: <span class="ident">u64</span>,
         <span class="ident">datasync</span>: <span class="ident">bool</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>,
     },
 
     <span class="doccomment">/// Set an extended attribute.</span>
@@ -637,7 +666,7 @@
         <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span>,
         <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>],
         <span class="ident">flags</span>: <span class="ident">u32</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>,
     },
 
     <span class="doccomment">/// Get an extended attribute.</span>
@@ -648,7 +677,7 @@
         <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
         <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span>,
         <span class="ident">size</span>: <span class="ident">u32</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyXattr</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyXattr</span>,
     },
 
     <span class="doccomment">/// List extended attribute names.</span>
@@ -661,14 +690,14 @@
     <span class="ident">Listxattr</span> {
         <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
         <span class="ident">size</span>: <span class="ident">u32</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyXattr</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyXattr</span>,
     },
 
     <span class="doccomment">/// Remove an extended attribute.</span>
     <span class="ident">Removexattr</span> {
         <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
         <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>,
     },
 
     <span class="doccomment">/// Close a file descriptor.</span>
@@ -676,14 +705,14 @@
         <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
         <span class="ident">fh</span>: <span class="ident">u64</span>,
         <span class="ident">lock_owner</span>: <span class="ident">u64</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>,
     },
 
     <span class="doccomment">/// Open a directory.</span>
     <span class="ident">Opendir</span> {
         <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
         <span class="ident">flags</span>: <span class="ident">u32</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyOpendir</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyOpendir</span>,
     },
 
     <span class="doccomment">/// Read contents from an opened directory.</span>
@@ -691,7 +720,7 @@
         <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
         <span class="ident">fh</span>: <span class="ident">u64</span>,
         <span class="ident">offset</span>: <span class="ident">u64</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyData</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyData</span>,
     },
 
     <span class="doccomment">/// Release an opened directory.</span>
@@ -699,7 +728,7 @@
         <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
         <span class="ident">fh</span>: <span class="ident">u64</span>,
         <span class="ident">flags</span>: <span class="ident">u32</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>,
     },
 
     <span class="doccomment">/// Synchronize an opened directory contents.</span>
@@ -711,7 +740,7 @@
         <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
         <span class="ident">fh</span>: <span class="ident">u64</span>,
         <span class="ident">datasync</span>: <span class="ident">bool</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>,
     },
 
     <span class="doccomment">/// Test for a POSIX file lock.</span>
@@ -720,7 +749,7 @@
         <span class="ident">fh</span>: <span class="ident">u64</span>,
         <span class="ident">owner</span>: <span class="ident">u64</span>,
         <span class="ident">lk</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">FileLock</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyLk</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyLk</span>,
     },
 
     <span class="doccomment">/// Acquire, modify or release a POSIX file lock.</span>
@@ -730,7 +759,7 @@
         <span class="ident">owner</span>: <span class="ident">u64</span>,
         <span class="ident">lk</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">FileLock</span>,
         <span class="ident">sleep</span>: <span class="ident">bool</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>,
     },
 
     <span class="doccomment">/// Acquire, modify or release a BSD file lock.</span>
@@ -739,14 +768,14 @@
         <span class="ident">fh</span>: <span class="ident">u64</span>,
         <span class="ident">owner</span>: <span class="ident">u64</span>,
         <span class="ident">op</span>: <span class="ident">u32</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>,
     },
 
     <span class="doccomment">/// Check file access permissions.</span>
     <span class="ident">Access</span> {
         <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
         <span class="ident">mask</span>: <span class="ident">u32</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>,
     },
 
     <span class="doccomment">/// Create and open a file.</span>
@@ -756,19 +785,19 @@
         <span class="ident">mode</span>: <span class="ident">FileMode</span>,
         <span class="ident">umask</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>,
         <span class="ident">open_flags</span>: <span class="ident">u32</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyCreate</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyCreate</span>,
     },
 
     <span class="doccomment">/// Map block index within a file to block index within device.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This callback makes sense only for filesystems that use</span>
+    <span class="doccomment">/// This operation makes sense only for filesystems that use</span>
     <span class="doccomment">/// block devices, and is called only when the mount options</span>
     <span class="doccomment">/// contains `blkdev`.</span>
     <span class="ident">Bmap</span> {
         <span class="ident">ino</span>: <span class="ident">Nodeid</span>,
         <span class="ident">block</span>: <span class="ident">u64</span>,
         <span class="ident">blocksize</span>: <span class="ident">u32</span>,
-        <span class="ident">reply</span>: <span class="ident">ReplyBmap</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyBmap</span>,
     },
     <span class="comment">// ioctl</span>
     <span class="comment">// poll</span>
@@ -779,47 +808,6 @@
     <span class="comment">// rename2</span>
     <span class="comment">// lseek</span>
     <span class="comment">// copy_file_range</span>
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Operation</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">reply_default</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="self">Self</span>::<span class="ident">Forget</span> { .. } <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(()),
-            <span class="self">Self</span>::<span class="ident">Lookup</span> { <span class="ident">reply</span>, .. }
-            <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Symlink</span> { <span class="ident">reply</span>, .. }
-            <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Mknod</span> { <span class="ident">reply</span>, .. }
-            <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Mkdir</span> { <span class="ident">reply</span>, .. }
-            <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Link</span> { <span class="ident">reply</span>, .. } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span>,
-            <span class="self">Self</span>::<span class="ident">Getattr</span> { <span class="ident">reply</span>, .. } <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Setattr</span> { <span class="ident">reply</span>, .. } <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span>
-            }
-            <span class="self">Self</span>::<span class="ident">Readlink</span> { <span class="ident">reply</span>, .. } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span>,
-            <span class="self">Self</span>::<span class="ident">Unlink</span> { <span class="ident">reply</span>, .. }
-            <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Rmdir</span> { <span class="ident">reply</span>, .. }
-            <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Rename</span> { <span class="ident">reply</span>, .. }
-            <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Release</span> { <span class="ident">reply</span>, .. }
-            <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Fsync</span> { <span class="ident">reply</span>, .. }
-            <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Setxattr</span> { <span class="ident">reply</span>, .. }
-            <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Removexattr</span> { <span class="ident">reply</span>, .. }
-            <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Flush</span> { <span class="ident">reply</span>, .. }
-            <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Releasedir</span> { <span class="ident">reply</span>, .. }
-            <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Fsyncdir</span> { <span class="ident">reply</span>, .. }
-            <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Setlk</span> { <span class="ident">reply</span>, .. }
-            <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Flock</span> { <span class="ident">reply</span>, .. }
-            <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Access</span> { <span class="ident">reply</span>, .. } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span>,
-            <span class="self">Self</span>::<span class="ident">Open</span> { <span class="ident">reply</span>, .. } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span>,
-            <span class="self">Self</span>::<span class="ident">Read</span> { <span class="ident">reply</span>, .. } <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Readdir</span> { <span class="ident">reply</span>, .. } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span>,
-            <span class="self">Self</span>::<span class="ident">Write</span> { <span class="ident">reply</span>, .. } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span>,
-            <span class="self">Self</span>::<span class="ident">Statfs</span> { <span class="ident">reply</span>, .. } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span>,
-            <span class="self">Self</span>::<span class="ident">Getxattr</span> { <span class="ident">reply</span>, .. } <span class="op">|</span> <span class="self">Self</span>::<span class="ident">Listxattr</span> { <span class="ident">reply</span>, .. } <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span>
-            }
-            <span class="self">Self</span>::<span class="ident">Getlk</span> { <span class="ident">reply</span>, .. } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span>,
-            <span class="self">Self</span>::<span class="ident">Opendir</span> { <span class="ident">reply</span>, .. } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span>,
-            <span class="self">Self</span>::<span class="ident">Create</span> { <span class="ident">reply</span>, .. } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span>,
-            <span class="self">Self</span>::<span class="ident">Bmap</span> { <span class="ident">reply</span>, .. } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">reply</span>.<span class="ident">err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span>,
-        }
-    }
 }
 </pre></div>
 </section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p></div></div></aside><script>window.rootPath = "../../";window.currentCrate = "polyfuse";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
