@@ -1,9 +1,0 @@
-(function() {var implementors = {};
-implementors["polyfuse_abi"] = [{text:"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/convert/trait.From.html\" title=\"trait core::convert::From\">From</a>&lt;<a class=\"enum\" href=\"https://doc.rust-lang.org/nightly/core/convert/enum.Infallible.html\" title=\"enum core::convert::Infallible\">Infallible</a>&gt; for <a class=\"struct\" href=\"polyfuse_abi/struct.InvalidLockType.html\" title=\"struct polyfuse_abi::InvalidLockType\">InvalidLockType</a>",synthetic:false,types:["polyfuse_abi::InvalidLockType"]},{text:"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/convert/trait.From.html\" title=\"trait core::convert::From\">From</a>&lt;<a class=\"struct\" href=\"https://doc.rust-lang.org/nightly/core/num/struct.TryFromIntError.html\" title=\"struct core::num::TryFromIntError\">TryFromIntError</a>&gt; for <a class=\"struct\" href=\"polyfuse_abi/struct.InvalidLockType.html\" title=\"struct polyfuse_abi::InvalidLockType\">InvalidLockType</a>",synthetic:false,types:["polyfuse_abi::InvalidLockType"]},{text:"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/convert/trait.From.html\" title=\"trait core::convert::From\">From</a>&lt;<a class=\"struct\" href=\"polyfuse_abi/struct.FileAttr.html\" title=\"struct polyfuse_abi::FileAttr\">FileAttr</a>&gt; for <a class=\"struct\" href=\"polyfuse_abi/struct.AttrOut.html\" title=\"struct polyfuse_abi::AttrOut\">AttrOut</a>",synthetic:false,types:["polyfuse_abi::AttrOut"]},];
-
-            if (window.register_implementors) {
-                window.register_implementors(implementors);
-            } else {
-                window.pending_implementors = implementors;
-            }
-        })()

@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["CuseFlags","CUSE init flags."],["InitIn","ABI compatible with `cuse_init_in`."],["InitOut","ABI compatible with `cuse_init_out`."]]});
