@@ -162,7 +162,7 @@
     <span class="ident">stream</span>::<span class="ident">StreamExt</span>,
 };
 <span class="kw">use</span> <span class="ident">libc</span>::<span class="ident">c_int</span>;
-<span class="kw">use</span> <span class="ident">polyfuse_abi</span>::<span class="ident">fuse_opcode</span>;
+<span class="kw">use</span> <span class="ident">polyfuse_sys</span>::<span class="ident">abi</span>::<span class="ident">fuse_opcode</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">io</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">convert</span>::<span class="ident">TryFrom</span>, <span class="ident">path</span>::<span class="ident">Path</span>, <span class="ident">sync</span>::<span class="ident">Arc</span>};
 <span class="kw">use</span> <span class="ident">tokio_net</span>::<span class="ident">signal</span>::<span class="ident">unix</span>::{<span class="ident">signal</span>, <span class="ident">SignalKind</span>};

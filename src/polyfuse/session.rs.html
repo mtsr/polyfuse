@@ -613,7 +613,7 @@
 };
 <span class="kw">use</span> <span class="ident">futures_channel</span>::<span class="ident">oneshot</span>;
 <span class="kw">use</span> <span class="ident">futures_io</span>::{<span class="ident">AsyncRead</span>, <span class="ident">AsyncWrite</span>};
-<span class="kw">use</span> <span class="ident">polyfuse_abi</span>::<span class="ident">fuse_init_out</span>;
+<span class="kw">use</span> <span class="ident">polyfuse_sys</span>::<span class="ident">abi</span>::<span class="ident">fuse_init_out</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">collections</span>::<span class="ident">HashMap</span>, <span class="ident">future</span>::<span class="ident">Future</span>, <span class="ident">io</span>};
 
 <span class="doccomment">/// A FUSE filesystem driver.</span>
@@ -861,10 +861,10 @@
                 <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">flock_release</span> <span class="op">=</span> <span class="bool-val">false</span>;
                 <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">lock_owner</span> <span class="op">=</span> <span class="prelude-val">None</span>;
                 <span class="kw">if</span> <span class="self">self</span>.<span class="ident">proto_minor</span> <span class="op">&gt;</span><span class="op">=</span> <span class="number">8</span> {
-                    <span class="ident">flush</span> <span class="op">=</span> <span class="ident">arg</span>.<span class="ident">release_flags</span> <span class="op">&amp;</span> <span class="ident">polyfuse_abi</span>::<span class="ident">FUSE_RELEASE_FLUSH</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span>;
+                    <span class="ident">flush</span> <span class="op">=</span> <span class="ident">arg</span>.<span class="ident">release_flags</span> <span class="op">&amp;</span> <span class="ident">polyfuse_sys</span>::<span class="ident">abi</span>::<span class="ident">FUSE_RELEASE_FLUSH</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span>;
                     <span class="ident">lock_owner</span>.<span class="ident">get_or_insert_with</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">arg</span>.<span class="ident">lock_owner</span>);
                 }
-                <span class="kw">if</span> <span class="ident">arg</span>.<span class="ident">release_flags</span> <span class="op">&amp;</span> <span class="ident">polyfuse_abi</span>::<span class="ident">FUSE_RELEASE_FLOCK_UNLOCK</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span> {
+                <span class="kw">if</span> <span class="ident">arg</span>.<span class="ident">release_flags</span> <span class="op">&amp;</span> <span class="ident">polyfuse_sys</span>::<span class="ident">abi</span>::<span class="ident">FUSE_RELEASE_FLOCK_UNLOCK</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span> {
                     <span class="ident">flock_release</span> <span class="op">=</span> <span class="bool-val">true</span>;
                     <span class="ident">lock_owner</span>.<span class="ident">get_or_insert_with</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">arg</span>.<span class="ident">lock_owner</span>);
                 }
@@ -1024,7 +1024,7 @@
                 .<span class="kw">await</span><span class="question-mark">?</span>;
             }
             <span class="ident">Arg</span>::<span class="ident">Setlk</span> { <span class="ident">arg</span>, <span class="ident">sleep</span> } <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="kw">if</span> <span class="ident">arg</span>.<span class="ident">lk_flags</span> <span class="op">&amp;</span> <span class="ident">polyfuse_abi</span>::<span class="ident">FUSE_LK_FLOCK</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span> {
+                <span class="kw">if</span> <span class="ident">arg</span>.<span class="ident">lk_flags</span> <span class="op">&amp;</span> <span class="ident">polyfuse_sys</span>::<span class="ident">abi</span>::<span class="ident">FUSE_LK_FLOCK</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span> {
                     <span class="kw">const</span> <span class="ident">F_RDLCK</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="ident">libc</span>::<span class="ident">F_RDLCK</span> <span class="kw">as</span> <span class="ident">u32</span>;
                     <span class="kw">const</span> <span class="ident">F_WRLCK</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="ident">libc</span>::<span class="ident">F_WRLCK</span> <span class="kw">as</span> <span class="ident">u32</span>;
                     <span class="kw">const</span> <span class="ident">F_UNLCK</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="ident">libc</span>::<span class="ident">F_UNLCK</span> <span class="kw">as</span> <span class="ident">u32</span>;
