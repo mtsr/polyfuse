@@ -991,6 +991,9 @@
 <span id="991">991</span>
 <span id="992">992</span>
 <span id="993">993</span>
+<span id="994">994</span>
+<span id="995">995</span>
+<span id="996">996</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! FUSE application binary interface.</span>
 <span class="doccomment">//!</span>
@@ -1102,6 +1105,9 @@
 <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">FUSE_COMPAT_INIT_OUT_SIZE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">8</span>;
 <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">FUSE_COMPAT_22_INIT_OUT_SIZE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">24</span>;
 <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">CUSE_INIT_INFO_MAX</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="number">4096</span>;
+
+<span class="comment">// Device ioctls</span>
+<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">FUSE_DEV_IOC_CLONE</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="number">0x_80_04_e5_00</span>; <span class="comment">// = _IOR(229, 0, uint32_t)</span>
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>, <span class="ident">Debug</span>)]</span>
 <span class="attribute">#[<span class="ident">repr</span>(<span class="ident">C</span>)]</span>
