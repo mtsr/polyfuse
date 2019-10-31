@@ -317,24 +317,12 @@
 <span id="317">317</span>
 <span id="318">318</span>
 <span id="319">319</span>
-<span id="320">320</span>
-<span id="321">321</span>
-<span id="322">322</span>
-<span id="323">323</span>
-<span id="324">324</span>
-<span id="325">325</span>
-<span id="326">326</span>
-<span id="327">327</span>
-<span id="328">328</span>
-<span id="329">329</span>
-<span id="330">330</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Serve FUSE filesystem.</span>
 
 <span class="kw">use</span> <span class="kw">crate</span>::{
     <span class="ident">conn</span>::<span class="ident">Connection</span>,
-    <span class="ident">fs</span>::<span class="ident">Filesystem</span>, <span class="comment">//</span>
-    <span class="ident">session</span>::{<span class="ident">Buffer</span>, <span class="ident">Session</span>},
+    <span class="ident">session</span>::{<span class="ident">Buffer</span>, <span class="ident">Filesystem</span>, <span class="ident">Session</span>},
 };
 <span class="kw">use</span> <span class="ident">futures</span>::{
     <span class="ident">future</span>::{<span class="ident">Future</span>, <span class="ident">FutureExt</span>},
@@ -362,25 +350,15 @@
 
 <span class="doccomment">/// FUSE filesystem server.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Server</span><span class="op">&lt;</span><span class="ident">I</span> <span class="op">=</span> <span class="ident">Channel</span><span class="op">&gt;</span> {
-    <span class="ident">io</span>: <span class="ident">I</span>,
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Server</span> {
+    <span class="ident">io</span>: <span class="ident">Channel</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">Server</span> {
     <span class="doccomment">/// Create a FUSE server mounted on the specified path.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">mount</span>(<span class="ident">mointpoint</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span>, <span class="ident">mountopts</span>: <span class="ident">MountOptions</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">io</span> <span class="op">=</span> <span class="ident">Channel</span>::<span class="ident">open</span>(<span class="ident">mointpoint</span>, <span class="ident">mountopts</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">Server</span>::<span class="ident">new</span>(<span class="ident">io</span>))
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="ident">Server</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">AsyncRead</span> <span class="op">+</span> <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Unpin</span> <span class="op">+</span> <span class="ident">Clone</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
-{
-    <span class="doccomment">/// Create a FUSE server.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">io</span>: <span class="ident">I</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">io</span> }
+        <span class="prelude-val">Ok</span>(<span class="ident">Server</span> { <span class="ident">io</span> })
     }
 
     <span class="doccomment">/// Run a FUSE filesystem.</span>
