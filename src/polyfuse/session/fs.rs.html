@@ -399,6 +399,45 @@
 <span id="399">399</span>
 <span id="400">400</span>
 <span id="401">401</span>
+<span id="402">402</span>
+<span id="403">403</span>
+<span id="404">404</span>
+<span id="405">405</span>
+<span id="406">406</span>
+<span id="407">407</span>
+<span id="408">408</span>
+<span id="409">409</span>
+<span id="410">410</span>
+<span id="411">411</span>
+<span id="412">412</span>
+<span id="413">413</span>
+<span id="414">414</span>
+<span id="415">415</span>
+<span id="416">416</span>
+<span id="417">417</span>
+<span id="418">418</span>
+<span id="419">419</span>
+<span id="420">420</span>
+<span id="421">421</span>
+<span id="422">422</span>
+<span id="423">423</span>
+<span id="424">424</span>
+<span id="425">425</span>
+<span id="426">426</span>
+<span id="427">427</span>
+<span id="428">428</span>
+<span id="429">429</span>
+<span id="430">430</span>
+<span id="431">431</span>
+<span id="432">432</span>
+<span id="433">433</span>
+<span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
+<span id="437">437</span>
+<span id="438">438</span>
+<span id="439">439</span>
+<span id="440">440</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Filesystem abstraction.</span>
 
@@ -423,6 +462,7 @@
 <span class="kw">use</span> <span class="ident">polyfuse_sys</span>::<span class="ident">abi</span>::{
     <span class="ident">fuse_attr</span>, <span class="comment">//</span>
     <span class="ident">fuse_file_lock</span>,
+    <span class="ident">fuse_forget_one</span>,
     <span class="ident">fuse_kstatfs</span>,
 };
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">convert</span>::<span class="ident">TryFrom</span>, <span class="ident">ffi</span>::<span class="ident">OsStr</span>, <span class="ident">io</span>};
@@ -485,6 +525,27 @@
     }
 }
 
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
+<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">transparent</span>)]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Forget</span>(<span class="ident">fuse_forget_one</span>);
+
+<span class="kw">impl</span> <span class="ident">Forget</span> {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">ino</span>: <span class="ident">u64</span>, <span class="ident">nlookup</span>: <span class="ident">u64</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="self">Self</span>(<span class="ident">fuse_forget_one</span> {
+            <span class="ident">nodeid</span>: <span class="ident">ino</span>,
+            <span class="ident">nlookup</span>,
+        })
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ino</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u64</span> {
+        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">nodeid</span>
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">nlookup</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u64</span> {
+        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">nlookup</span>
+    }
+}
+
 <span class="doccomment">/// The filesystem running on the user space.</span>
 <span class="attribute">#[<span class="ident">async_trait</span>::<span class="ident">async_trait</span>]</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Send</span><span class="op">&gt;</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span> {
@@ -509,9 +570,7 @@
     },
 
     <span class="doccomment">/// Forget about inodes removed from the kernel&#39;s internal caches.</span>
-    <span class="ident">Forget</span> {
-        <span class="ident">nlookups</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [(<span class="ident">u64</span>, <span class="ident">u64</span>)], <span class="comment">//</span>
-    },
+    <span class="ident">Forget</span> { <span class="ident">forgets</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">Forget</span>] },
 
     <span class="doccomment">/// Get file attributes.</span>
     <span class="ident">Getattr</span> {
@@ -712,6 +771,7 @@
         <span class="ident">ino</span>: <span class="ident">u64</span>,
         <span class="ident">fh</span>: <span class="ident">u64</span>,
         <span class="ident">offset</span>: <span class="ident">u64</span>,
+        <span class="ident">plus</span>: <span class="ident">bool</span>,
         <span class="ident">reply</span>: <span class="ident">ReplyData</span>,
     },
 
@@ -791,15 +851,33 @@
         <span class="ident">blocksize</span>: <span class="ident">u32</span>,
         <span class="ident">reply</span>: <span class="ident">ReplyBmap</span>,
     },
-    <span class="comment">// ioctl</span>
-    <span class="comment">// poll</span>
-    <span class="comment">// notify_reply</span>
-    <span class="comment">// batch_forget</span>
-    <span class="comment">// fallocate</span>
-    <span class="comment">// readdirplus</span>
-    <span class="comment">// rename2</span>
-    <span class="comment">// lseek</span>
-    <span class="comment">// copy_file_range</span>
+
+    <span class="doccomment">/// Allocate requested space to an opened file.</span>
+    <span class="ident">Fallocate</span> {
+        <span class="ident">ino</span>: <span class="ident">u64</span>,
+        <span class="ident">fh</span>: <span class="ident">u64</span>,
+        <span class="ident">offset</span>: <span class="ident">u64</span>,
+        <span class="ident">length</span>: <span class="ident">u64</span>,
+        <span class="ident">mode</span>: <span class="ident">u32</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>,
+    },
+
+    <span class="doccomment">/// Copy a range of data from an opened file to another.</span>
+    <span class="ident">CopyFileRange</span> {
+        <span class="ident">ino_in</span>: <span class="ident">u64</span>,
+        <span class="ident">off_in</span>: <span class="ident">u64</span>,
+        <span class="ident">fh_in</span>: <span class="ident">u64</span>,
+        <span class="ident">ino_out</span>: <span class="ident">u64</span>,
+        <span class="ident">off_out</span>: <span class="ident">u64</span>,
+        <span class="ident">fh_out</span>: <span class="ident">u64</span>,
+        <span class="ident">len</span>: <span class="ident">u64</span>,
+        <span class="ident">flags</span>: <span class="ident">u64</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyWrite</span>,
+    },
 }
+
+<span class="comment">// TODO: add operations:</span>
+<span class="comment">// Ioctl</span>
+<span class="comment">// Poll</span>
 </pre></div>
 </section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p><p>You can look for items with an exact name by putting double quotes around your request: <code>"string"</code></p><p>Look for items inside another one by searching for a path: <code>vec::Vec</code></p></div></div></aside><script>window.rootPath = "../../../";window.currentCrate = "polyfuse";</script><script src="../../../aliases.js"></script><script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script><script defer src="../../../search-index.js"></script></body></html>

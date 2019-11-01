@@ -431,13 +431,71 @@
 <span id="431">431</span>
 <span id="432">432</span>
 <span id="433">433</span>
+<span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
+<span id="437">437</span>
+<span id="438">438</span>
+<span id="439">439</span>
+<span id="440">440</span>
+<span id="441">441</span>
+<span id="442">442</span>
+<span id="443">443</span>
+<span id="444">444</span>
+<span id="445">445</span>
+<span id="446">446</span>
+<span id="447">447</span>
+<span id="448">448</span>
+<span id="449">449</span>
+<span id="450">450</span>
+<span id="451">451</span>
+<span id="452">452</span>
+<span id="453">453</span>
+<span id="454">454</span>
+<span id="455">455</span>
+<span id="456">456</span>
+<span id="457">457</span>
+<span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
+<span id="465">465</span>
+<span id="466">466</span>
+<span id="467">467</span>
+<span id="468">468</span>
+<span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+<span id="478">478</span>
+<span id="479">479</span>
+<span id="480">480</span>
+<span id="481">481</span>
+<span id="482">482</span>
+<span id="483">483</span>
+<span id="484">484</span>
+<span id="485">485</span>
+<span id="486">486</span>
+<span id="487">487</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">polyfuse_sys</span>::<span class="ident">abi</span>::{
     <span class="ident">fuse_access_in</span>, <span class="comment">//</span>
+    <span class="ident">fuse_batch_forget_in</span>,
     <span class="ident">fuse_bmap_in</span>,
+    <span class="ident">fuse_copy_file_range_in</span>,
     <span class="ident">fuse_create_in</span>,
+    <span class="ident">fuse_fallocate_in</span>,
     <span class="ident">fuse_flush_in</span>,
     <span class="ident">fuse_forget_in</span>,
+    <span class="ident">fuse_forget_one</span>,
     <span class="ident">fuse_fsync_in</span>,
     <span class="ident">fuse_getattr_in</span>,
     <span class="ident">fuse_getxattr_in</span>,
@@ -452,6 +510,7 @@
     <span class="ident">fuse_open_in</span>,
     <span class="ident">fuse_read_in</span>,
     <span class="ident">fuse_release_in</span>,
+    <span class="ident">fuse_rename2_in</span>,
     <span class="ident">fuse_rename_in</span>,
     <span class="ident">fuse_setattr_in</span>,
     <span class="ident">fuse_setxattr_in</span>,
@@ -562,6 +621,7 @@
     },
     <span class="ident">Readdir</span> {
         <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">fuse_read_in</span>,
+        <span class="ident">plus</span>: <span class="ident">bool</span>,
     },
     <span class="ident">Releasedir</span> {
         <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">fuse_release_in</span>,
@@ -589,17 +649,28 @@
     <span class="ident">Bmap</span> {
         <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">fuse_bmap_in</span>,
     },
-    <span class="comment">// Ioctl,</span>
-    <span class="comment">// Poll,</span>
-    <span class="comment">// NotifyReply,</span>
-    <span class="comment">// BatchForget,</span>
-    <span class="comment">// Fallocate,</span>
-    <span class="comment">// Readdirplus,</span>
-    <span class="comment">// Rename2,</span>
-    <span class="comment">// Lseek,</span>
-    <span class="comment">// CopyFileRange,</span>
+    <span class="ident">Fallocate</span> {
+        <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">fuse_fallocate_in</span>,
+    },
+    <span class="ident">Rename2</span> {
+        <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">fuse_rename2_in</span>,
+        <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span>,
+        <span class="ident">newname</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span>,
+    },
+    <span class="ident">CopyFileRange</span> {
+        <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">fuse_copy_file_range_in</span>,
+    },
+    <span class="ident">BatchForget</span> {
+        <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">fuse_batch_forget_in</span>,
+        <span class="ident">forgets</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">fuse_forget_one</span>],
+    },
     <span class="ident">Unknown</span>,
 }
+
+<span class="comment">// TODO: add opcodes:</span>
+<span class="comment">// Ioctl,</span>
+<span class="comment">// Poll,</span>
+<span class="comment">// NotifyReply,</span>
 
 <span class="kw">impl</span> <span class="ident">Request</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">unique</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u64</span> {
@@ -653,6 +724,10 @@
     <span class="ident">fuse_create_in</span>,
     <span class="ident">fuse_interrupt_in</span>,
     <span class="ident">fuse_bmap_in</span>,
+    <span class="ident">fuse_fallocate_in</span>,
+    <span class="ident">fuse_rename2_in</span>,
+    <span class="ident">fuse_copy_file_range_in</span>,
+    <span class="ident">fuse_batch_forget_in</span>,
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
@@ -675,6 +750,16 @@
         <span class="self">self</span>.<span class="ident">offset</span> <span class="op">+</span><span class="op">=</span> <span class="ident">count</span>;
 
         <span class="prelude-val">Ok</span>(<span class="ident">data</span>)
+    }
+
+    <span class="kw">fn</span> <span class="ident">fetch_array</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">count</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">T</span>]<span class="op">&gt;</span> {
+        <span class="self">self</span>.<span class="ident">fetch_bytes</span>(<span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>() <span class="op">*</span> <span class="ident">count</span>)
+            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">bytes</span><span class="op">|</span> <span class="kw">unsafe</span> {
+                <span class="ident">std</span>::<span class="ident">slice</span>::<span class="ident">from_raw_parts</span>(
+                    <span class="ident">bytes</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>, <span class="comment">//</span>
+                    <span class="ident">count</span>,
+                )
+            })
     }
 
     <span class="kw">fn</span> <span class="ident">fetch_str</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">OsStr</span><span class="op">&gt;</span> {
@@ -822,7 +907,7 @@
             }
             <span class="prelude-val">Some</span>(<span class="ident">fuse_opcode</span>::<span class="ident">FUSE_READDIR</span>) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">RequestKind</span>::<span class="ident">Readdir</span> { <span class="ident">arg</span> })
+                <span class="prelude-val">Ok</span>(<span class="ident">RequestKind</span>::<span class="ident">Readdir</span> { <span class="ident">arg</span>, <span class="ident">plus</span>: <span class="bool-val">false</span> })
             }
             <span class="prelude-val">Some</span>(<span class="ident">fuse_opcode</span>::<span class="ident">FUSE_RELEASEDIR</span>) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
@@ -860,6 +945,29 @@
             <span class="prelude-val">Some</span>(<span class="ident">fuse_opcode</span>::<span class="ident">FUSE_BMAP</span>) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(<span class="ident">RequestKind</span>::<span class="ident">Bmap</span> { <span class="ident">arg</span> })
+            }
+            <span class="prelude-val">Some</span>(<span class="ident">fuse_opcode</span>::<span class="ident">FUSE_FALLOCATE</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(<span class="ident">RequestKind</span>::<span class="ident">Fallocate</span> { <span class="ident">arg</span> })
+            }
+            <span class="prelude-val">Some</span>(<span class="ident">fuse_opcode</span>::<span class="ident">FUSE_READDIRPLUS</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(<span class="ident">RequestKind</span>::<span class="ident">Readdir</span> { <span class="ident">arg</span>, <span class="ident">plus</span>: <span class="bool-val">true</span> })
+            }
+            <span class="prelude-val">Some</span>(<span class="ident">fuse_opcode</span>::<span class="ident">FUSE_RENAME2</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
+                <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch_str</span>()<span class="question-mark">?</span>;
+                <span class="kw">let</span> <span class="ident">newname</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch_str</span>()<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(<span class="ident">RequestKind</span>::<span class="ident">Rename2</span> { <span class="ident">arg</span>, <span class="ident">name</span>, <span class="ident">newname</span> })
+            }
+            <span class="prelude-val">Some</span>(<span class="ident">fuse_opcode</span>::<span class="ident">FUSE_COPY_FILE_RANGE</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(<span class="ident">RequestKind</span>::<span class="ident">CopyFileRange</span> { <span class="ident">arg</span> })
+            }
+            <span class="prelude-val">Some</span>(<span class="ident">fuse_opcode</span>::<span class="ident">FUSE_BATCH_FORGET</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">let</span> <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="ident">fuse_batch_forget_in</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
+                <span class="kw">let</span> <span class="ident">forgets</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch_array</span>(<span class="ident">arg</span>.<span class="ident">count</span> <span class="kw">as</span> <span class="ident">usize</span>)<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(<span class="ident">RequestKind</span>::<span class="ident">BatchForget</span> { <span class="ident">arg</span>, <span class="ident">forgets</span> })
             }
             <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident">RequestKind</span>::<span class="ident">Unknown</span>),
         }

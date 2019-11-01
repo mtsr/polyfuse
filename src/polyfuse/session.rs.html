@@ -716,6 +716,49 @@
 <span id="716">716</span>
 <span id="717">717</span>
 <span id="718">718</span>
+<span id="719">719</span>
+<span id="720">720</span>
+<span id="721">721</span>
+<span id="722">722</span>
+<span id="723">723</span>
+<span id="724">724</span>
+<span id="725">725</span>
+<span id="726">726</span>
+<span id="727">727</span>
+<span id="728">728</span>
+<span id="729">729</span>
+<span id="730">730</span>
+<span id="731">731</span>
+<span id="732">732</span>
+<span id="733">733</span>
+<span id="734">734</span>
+<span id="735">735</span>
+<span id="736">736</span>
+<span id="737">737</span>
+<span id="738">738</span>
+<span id="739">739</span>
+<span id="740">740</span>
+<span id="741">741</span>
+<span id="742">742</span>
+<span id="743">743</span>
+<span id="744">744</span>
+<span id="745">745</span>
+<span id="746">746</span>
+<span id="747">747</span>
+<span id="748">748</span>
+<span id="749">749</span>
+<span id="750">750</span>
+<span id="751">751</span>
+<span id="752">752</span>
+<span id="753">753</span>
+<span id="754">754</span>
+<span id="755">755</span>
+<span id="756">756</span>
+<span id="757">757</span>
+<span id="758">758</span>
+<span id="759">759</span>
+<span id="760">760</span>
+<span id="761">761</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Lowlevel interface to handle FUSE requests.</span>
 
@@ -726,7 +769,7 @@
 <span class="kw">mod</span> <span class="ident">request</span>;
 
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">buf</span>::<span class="ident">Buffer</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">fs</span>::{<span class="ident">FileAttr</span>, <span class="ident">FileLock</span>, <span class="ident">Filesystem</span>, <span class="ident">FsStatistics</span>, <span class="ident">Operation</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">fs</span>::{<span class="ident">FileAttr</span>, <span class="ident">FileLock</span>, <span class="ident">Filesystem</span>, <span class="ident">Forget</span>, <span class="ident">FsStatistics</span>, <span class="ident">Operation</span>};
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">request</span>::<span class="ident">Request</span>;
 
 <span class="kw">use</span> <span class="ident">futures</span>::{
@@ -735,7 +778,7 @@
     <span class="ident">io</span>::{<span class="ident">AsyncRead</span>, <span class="ident">AsyncWrite</span>},
     <span class="ident">lock</span>::<span class="ident">Mutex</span>,
 };
-<span class="kw">use</span> <span class="ident">polyfuse_sys</span>::<span class="ident">abi</span>::{<span class="ident">fuse_in_header</span>, <span class="ident">fuse_init_out</span>, <span class="ident">fuse_out_header</span>};
+<span class="kw">use</span> <span class="ident">polyfuse_sys</span>::<span class="ident">abi</span>::{<span class="ident">fuse_forget_one</span>, <span class="ident">fuse_in_header</span>, <span class="ident">fuse_init_out</span>, <span class="ident">fuse_out_header</span>};
 <span class="kw">use</span> <span class="ident">reply</span>::{<span class="ident">Payload</span>, <span class="ident">ReplyData</span>};
 <span class="kw">use</span> <span class="ident">request</span>::<span class="ident">RequestKind</span>;
 <span class="kw">use</span> <span class="ident">smallvec</span>::<span class="ident">SmallVec</span>;
@@ -907,7 +950,25 @@
                 <span class="ident">fs</span>.<span class="ident">call</span>(
                     <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Forget</span> {
-                        <span class="ident">nlookups</span>: <span class="kw-2">&amp;</span>[(<span class="ident">ino</span>, <span class="ident">arg</span>.<span class="ident">nlookup</span>)],
+                        <span class="ident">forgets</span>: <span class="kw-2">&amp;</span>[<span class="ident">Forget</span>::<span class="ident">new</span>(<span class="ident">ino</span>, <span class="ident">arg</span>.<span class="ident">nlookup</span>)],
+                    },
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+            <span class="ident">RequestKind</span>::<span class="ident">BatchForget</span> { <span class="ident">forgets</span>, .. } <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
+                <span class="kw">fn</span> <span class="ident">make_forgets</span>(<span class="ident">forgets</span>: <span class="kw-2">&amp;</span>[<span class="ident">fuse_forget_one</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">Forget</span>] {
+                    <span class="kw">unsafe</span> {
+                        <span class="ident">std</span>::<span class="ident">slice</span>::<span class="ident">from_raw_parts</span>(
+                            <span class="ident">forgets</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">Forget</span>, <span class="comment">//</span>
+                            <span class="ident">forgets</span>.<span class="ident">len</span>(),
+                        )
+                    }
+                }
+                <span class="ident">fs</span>.<span class="ident">call</span>(
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
+                    <span class="ident">Operation</span>::<span class="ident">Forget</span> {
+                        <span class="ident">forgets</span>: <span class="ident">make_forgets</span>(<span class="ident">forgets</span>),
                     },
                 )
                 .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -988,6 +1049,16 @@
                     <span class="ident">newparent</span>: <span class="ident">arg</span>.<span class="ident">newdir</span>,
                     <span class="ident">newname</span>,
                     <span class="ident">flags</span>: <span class="number">0</span>,
+                    <span class="ident">reply</span>: <span class="ident">Default</span>::<span class="ident">default</span>(),
+                });
+            }
+            <span class="ident">RequestKind</span>::<span class="ident">Rename2</span> { <span class="ident">arg</span>, <span class="ident">name</span>, <span class="ident">newname</span> } <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Rename</span> {
+                    <span class="ident">parent</span>: <span class="ident">ino</span>,
+                    <span class="ident">name</span>,
+                    <span class="ident">newparent</span>: <span class="ident">arg</span>.<span class="ident">newdir</span>,
+                    <span class="ident">newname</span>,
+                    <span class="ident">flags</span>: <span class="ident">arg</span>.<span class="ident">flags</span>,
                     <span class="ident">reply</span>: <span class="ident">Default</span>::<span class="ident">default</span>(),
                 });
             }
@@ -1113,11 +1184,12 @@
                     <span class="ident">reply</span>: <span class="ident">Default</span>::<span class="ident">default</span>(),
                 });
             }
-            <span class="ident">RequestKind</span>::<span class="ident">Readdir</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="ident">RequestKind</span>::<span class="ident">Readdir</span> { <span class="ident">arg</span>, <span class="ident">plus</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Readdir</span> {
                     <span class="ident">ino</span>,
                     <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
                     <span class="ident">offset</span>: <span class="ident">arg</span>.<span class="ident">offset</span>,
+                    <span class="ident">plus</span>,
                     <span class="ident">reply</span>: <span class="ident">ReplyData</span>::<span class="ident">new</span>(<span class="ident">arg</span>.<span class="ident">size</span>),
                 });
             }
@@ -1204,16 +1276,30 @@
                     <span class="ident">reply</span>: <span class="ident">Default</span>::<span class="ident">default</span>(),
                 });
             }
+            <span class="ident">RequestKind</span>::<span class="ident">Fallocate</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Fallocate</span> {
+                    <span class="ident">ino</span>,
+                    <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
+                    <span class="ident">offset</span>: <span class="ident">arg</span>.<span class="ident">offset</span>,
+                    <span class="ident">length</span>: <span class="ident">arg</span>.<span class="ident">length</span>,
+                    <span class="ident">mode</span>: <span class="ident">arg</span>.<span class="ident">mode</span>,
+                    <span class="ident">reply</span>: <span class="ident">Default</span>::<span class="ident">default</span>(),
+                });
+            }
+            <span class="ident">RequestKind</span>::<span class="ident">CopyFileRange</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">CopyFileRange</span> {
+                    <span class="ident">ino_in</span>: <span class="ident">ino</span>,
+                    <span class="ident">fh_in</span>: <span class="ident">arg</span>.<span class="ident">fh_in</span>,
+                    <span class="ident">off_in</span>: <span class="ident">arg</span>.<span class="ident">off_in</span>,
+                    <span class="ident">ino_out</span>: <span class="ident">arg</span>.<span class="ident">nodeid_out</span>,
+                    <span class="ident">fh_out</span>: <span class="ident">arg</span>.<span class="ident">fh_out</span>,
+                    <span class="ident">off_out</span>: <span class="ident">arg</span>.<span class="ident">off_out</span>,
+                    <span class="ident">len</span>: <span class="ident">arg</span>.<span class="ident">len</span>,
+                    <span class="ident">flags</span>: <span class="ident">arg</span>.<span class="ident">flags</span>,
+                    <span class="ident">reply</span>: <span class="ident">Default</span>::<span class="ident">default</span>(),
+                });
+            }
 
-            <span class="comment">// Ioctl,</span>
-            <span class="comment">// Poll,</span>
-            <span class="comment">// NotifyReply,</span>
-            <span class="comment">// BatchForget,</span>
-            <span class="comment">// Fallocate,</span>
-            <span class="comment">// Readdirplus,</span>
-            <span class="comment">// Rename2,</span>
-            <span class="comment">// Lseek,</span>
-            <span class="comment">// CopyFileRange,</span>
             <span class="ident">RequestKind</span>::<span class="ident">Unknown</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;unsupported opcode: {:?}&quot;</span>, <span class="ident">header</span>.<span class="ident">opcode</span>);
                 <span class="ident">cx</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span><span class="question-mark">?</span>;
