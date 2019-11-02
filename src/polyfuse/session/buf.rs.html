@@ -101,6 +101,16 @@
 <span id="101">101</span>
 <span id="102">102</span>
 <span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">request</span>::{<span class="ident">Parser</span>, <span class="ident">Request</span>, <span class="ident">RequestKind</span>};
 <span class="kw">use</span> <span class="ident">futures</span>::{<span class="ident">future</span>::<span class="ident">poll_fn</span>, <span class="ident">io</span>::<span class="ident">AsyncRead</span>};
@@ -196,7 +206,17 @@
             <span class="ident">RequestKind</span>::<span class="ident">Write</span> { <span class="ident">arg</span>: <span class="ident">write_in</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">size</span> <span class="op">=</span> <span class="ident">write_in</span>.<span class="ident">size</span> <span class="kw">as</span> <span class="ident">usize</span>;
                 <span class="kw">if</span> <span class="ident">offset</span> <span class="op">+</span> <span class="ident">size</span> <span class="op">&lt;</span> <span class="self">self</span>.<span class="ident">recv_buf</span>.<span class="ident">len</span>() {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>, <span class="string">&quot;receive_write&quot;</span>));
+                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>, <span class="string">&quot;decode: write&quot;</span>));
+                }
+                <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">recv_buf</span>[<span class="ident">offset</span>..<span class="ident">offset</span> <span class="op">+</span> <span class="ident">size</span>])
+            }
+            <span class="ident">RequestKind</span>::<span class="ident">NotifyReply</span> { <span class="ident">arg</span>: <span class="ident">retrieve_in</span> } <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">let</span> <span class="ident">size</span> <span class="op">=</span> <span class="ident">retrieve_in</span>.<span class="ident">size</span> <span class="kw">as</span> <span class="ident">usize</span>;
+                <span class="kw">if</span> <span class="ident">offset</span> <span class="op">+</span> <span class="ident">size</span> <span class="op">&lt;</span> <span class="self">self</span>.<span class="ident">recv_buf</span>.<span class="ident">len</span>() {
+                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(
+                        <span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>,
+                        <span class="string">&quot;decode: retrieve_in&quot;</span>,
+                    ));
                 }
                 <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">recv_buf</span>[<span class="ident">offset</span>..<span class="ident">offset</span> <span class="op">+</span> <span class="ident">size</span>])
             }
