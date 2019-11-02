@@ -484,12 +484,115 @@
 <span id="484">484</span>
 <span id="485">485</span>
 <span id="486">486</span>
+<span id="487">487</span>
+<span id="488">488</span>
+<span id="489">489</span>
+<span id="490">490</span>
+<span id="491">491</span>
+<span id="492">492</span>
+<span id="493">493</span>
+<span id="494">494</span>
+<span id="495">495</span>
+<span id="496">496</span>
+<span id="497">497</span>
+<span id="498">498</span>
+<span id="499">499</span>
+<span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+<span id="503">503</span>
+<span id="504">504</span>
+<span id="505">505</span>
+<span id="506">506</span>
+<span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
+<span id="532">532</span>
+<span id="533">533</span>
+<span id="534">534</span>
+<span id="535">535</span>
+<span id="536">536</span>
+<span id="537">537</span>
+<span id="538">538</span>
+<span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
+<span id="570">570</span>
+<span id="571">571</span>
+<span id="572">572</span>
+<span id="573">573</span>
+<span id="574">574</span>
+<span id="575">575</span>
+<span id="576">576</span>
+<span id="577">577</span>
+<span id="578">578</span>
+<span id="579">579</span>
+<span id="580">580</span>
+<span id="581">581</span>
+<span id="582">582</span>
+<span id="583">583</span>
+<span id="584">584</span>
+<span id="585">585</span>
+<span id="586">586</span>
+<span id="587">587</span>
+<span id="588">588</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Replies to the kernel.</span>
 
 <span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">needless_update</span>)]</span>
 
 <span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">Context</span>, <span class="ident">FileAttr</span>, <span class="ident">FileLock</span>, <span class="ident">FsStatistics</span>};
+<span class="kw">use</span> <span class="ident">futures</span>::{<span class="ident">future</span>::<span class="ident">poll_fn</span>, <span class="ident">io</span>::<span class="ident">AsyncWrite</span>};
 <span class="kw">use</span> <span class="ident">polyfuse_sys</span>::<span class="ident">abi</span>::{
     <span class="ident">fuse_attr_out</span>, <span class="comment">//</span>
     <span class="ident">fuse_bmap_out</span>,
@@ -502,11 +605,14 @@
     <span class="ident">fuse_statfs_out</span>,
     <span class="ident">fuse_write_out</span>,
 };
+<span class="kw">use</span> <span class="ident">smallvec</span>::<span class="ident">SmallVec</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{
-    <span class="ident">convert</span>::<span class="ident">TryInto</span>,
+    <span class="ident">convert</span>::{<span class="ident">TryFrom</span>, <span class="ident">TryInto</span>},
     <span class="ident">ffi</span>::<span class="ident">OsStr</span>,
-    <span class="ident">io</span>::{<span class="self">self</span>},
+    <span class="ident">io</span>::{<span class="self">self</span>, <span class="ident">IoSlice</span>},
+    <span class="ident">mem</span>,
     <span class="ident">os</span>::<span class="ident">unix</span>::<span class="ident">ffi</span>::<span class="ident">OsStrExt</span>,
+    <span class="ident">pin</span>::<span class="ident">Pin</span>,
 };
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait</span> <span class="ident">Payload</span> {
@@ -969,6 +1075,104 @@
             ..<span class="ident">Default</span>::<span class="ident">default</span>()
         };
         <span class="ident">cx</span>.<span class="ident">reply</span>(<span class="ident">out</span>.<span class="ident">as_bytes</span>()).<span class="kw">await</span>
+    }
+}
+
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">send_msg</span>(
+    <span class="ident">writer</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> (<span class="kw">impl</span> <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>),
+    <span class="ident">unique</span>: <span class="ident">u64</span>,
+    <span class="ident">error</span>: <span class="ident">i32</span>,
+    <span class="ident">data</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>[<span class="ident">u8</span>]],
+) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">data_len</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">data</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> <span class="ident">t</span>.<span class="ident">len</span>()).<span class="ident">sum</span>();
+    <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">fuse_out_header</span><span class="op">&gt;</span>() <span class="op">+</span> <span class="ident">data_len</span>) <span class="comment">//</span>
+        .<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> {
+            <span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(
+                <span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>,
+                <span class="string">&quot;the total length of data is too long: {}&quot;</span>,
+            )
+        })<span class="question-mark">?</span>;
+
+    <span class="kw">let</span> <span class="ident">out_header</span> <span class="op">=</span> <span class="ident">fuse_out_header</span> { <span class="ident">unique</span>, <span class="ident">error</span>, <span class="ident">len</span> };
+
+    <span class="comment">// Unfortunately, IoSlice&lt;&#39;_&gt; does not implement Send and</span>
+    <span class="comment">// the data vector must be created in `poll` function.</span>
+    <span class="ident">poll_fn</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">cx</span><span class="op">|</span> {
+        <span class="kw">let</span> <span class="ident">vec</span>: <span class="ident">SmallVec</span><span class="op">&lt;</span>[<span class="kw">_</span>; <span class="number">4</span>]<span class="op">&gt;</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">IoSlice</span>::<span class="ident">new</span>(<span class="ident">out_header</span>.<span class="ident">as_bytes</span>()))
+            .<span class="ident">into_iter</span>()
+            .<span class="ident">chain</span>(<span class="ident">data</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> <span class="ident">IoSlice</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">t</span>)))
+            .<span class="ident">collect</span>();
+        <span class="ident">Pin</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw-2">*</span><span class="ident">writer</span>).<span class="ident">poll_write_vectored</span>(<span class="ident">cx</span>, <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">vec</span>)
+    })
+    .<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;Reply to kernel: unique={}: error={}&quot;</span>, <span class="ident">unique</span>, <span class="ident">error</span>);
+
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
+<span class="kw">mod</span> <span class="ident">tests</span> {
+    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use</span> <span class="ident">futures</span>::<span class="ident">executor</span>::<span class="ident">block_on</span>;
+
+    <span class="attribute">#[<span class="ident">inline</span>]</span>
+    <span class="kw">fn</span> <span class="ident">bytes</span>(<span class="ident">bytes</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] {
+        <span class="ident">bytes</span>
+    }
+    <span class="macro">macro_rules</span><span class="macro">!</span> <span class="ident">b</span> {
+        ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">b</span>:<span class="ident">expr</span>),<span class="kw-2">*</span>$(,)<span class="question-mark">?</span>) <span class="op">=</span><span class="op">&gt;</span> ( <span class="kw-2">*</span><span class="ident">bytes</span>(<span class="kw-2">&amp;</span>[$(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">b</span>),<span class="kw-2">*</span>]) );
+    }
+
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">send_msg_empty</span>() {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">dest</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>::<span class="ident">new</span>();
+        <span class="ident">block_on</span>(<span class="ident">send_msg</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">dest</span>, <span class="number">42</span>, <span class="number">4</span>, <span class="kw-2">&amp;</span>[])).<span class="ident">unwrap</span>();
+        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dest</span>[<span class="number">0</span>..<span class="number">4</span>], <span class="macro">b</span><span class="macro">!</span>[<span class="number">0x10</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>], <span class="string">&quot;header.len&quot;</span>);
+        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dest</span>[<span class="number">4</span>..<span class="number">8</span>], <span class="macro">b</span><span class="macro">!</span>[<span class="number">0x04</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>], <span class="string">&quot;header.error&quot;</span>);
+        <span class="macro">assert_eq</span><span class="macro">!</span>(
+            <span class="ident">dest</span>[<span class="number">8</span>..<span class="number">16</span>],
+            <span class="macro">b</span><span class="macro">!</span>[<span class="number">0x2a</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>],
+            <span class="string">&quot;header.unique&quot;</span>
+        );
+    }
+
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">send_msg_single_data</span>() {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">dest</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>::<span class="ident">new</span>();
+        <span class="ident">block_on</span>(<span class="ident">send_msg</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">dest</span>, <span class="number">42</span>, <span class="number">0</span>, <span class="kw-2">&amp;</span>[<span class="string">&quot;hello&quot;</span>.<span class="ident">as_ref</span>()])).<span class="ident">unwrap</span>();
+        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dest</span>[<span class="number">0</span>..<span class="number">4</span>], <span class="macro">b</span><span class="macro">!</span>[<span class="number">0x15</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>], <span class="string">&quot;header.len&quot;</span>);
+        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dest</span>[<span class="number">4</span>..<span class="number">8</span>], <span class="macro">b</span><span class="macro">!</span>[<span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>], <span class="string">&quot;header.error&quot;</span>);
+        <span class="macro">assert_eq</span><span class="macro">!</span>(
+            <span class="ident">dest</span>[<span class="number">8</span>..<span class="number">16</span>],
+            <span class="macro">b</span><span class="macro">!</span>[<span class="number">0x2a</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>],
+            <span class="string">&quot;header.unique&quot;</span>
+        );
+        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dest</span>[<span class="number">16</span>..], <span class="macro">b</span><span class="macro">!</span>[<span class="number">0x68</span>, <span class="number">0x65</span>, <span class="number">0x6c</span>, <span class="number">0x6c</span>, <span class="number">0x6f</span>], <span class="string">&quot;payload&quot;</span>);
+    }
+
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">send_msg_chunked_data</span>() {
+        <span class="kw">let</span> <span class="ident">payload</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>[<span class="ident">u8</span>]] <span class="op">=</span> <span class="kw-2">&amp;</span>[
+            <span class="string">&quot;hello, &quot;</span>.<span class="ident">as_ref</span>(), <span class="comment">//</span>
+            <span class="string">&quot;this &quot;</span>.<span class="ident">as_ref</span>(),
+            <span class="string">&quot;is a &quot;</span>.<span class="ident">as_ref</span>(),
+            <span class="string">&quot;message.&quot;</span>.<span class="ident">as_ref</span>(),
+        ];
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">dest</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>::<span class="ident">new</span>();
+        <span class="ident">block_on</span>(<span class="ident">send_msg</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">dest</span>, <span class="number">26</span>, <span class="number">0</span>, <span class="ident">payload</span>)).<span class="ident">unwrap</span>();
+        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dest</span>[<span class="number">0</span>..<span class="number">4</span>], <span class="macro">b</span><span class="macro">!</span>[<span class="number">0x29</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>], <span class="string">&quot;header.len&quot;</span>);
+        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dest</span>[<span class="number">4</span>..<span class="number">8</span>], <span class="macro">b</span><span class="macro">!</span>[<span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>], <span class="string">&quot;header.error&quot;</span>);
+        <span class="macro">assert_eq</span><span class="macro">!</span>(
+            <span class="ident">dest</span>[<span class="number">8</span>..<span class="number">16</span>],
+            <span class="macro">b</span><span class="macro">!</span>[<span class="number">0x1a</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>],
+            <span class="string">&quot;header.unique&quot;</span>
+        );
+        <span class="macro">assert_eq</span><span class="macro">!</span>(
+            <span class="ident">dest</span>[<span class="number">16</span>..],
+            <span class="kw-2">*</span><span class="string">&quot;hello, this is a message.&quot;</span>.<span class="ident">as_bytes</span>(),
+            <span class="string">&quot;payload&quot;</span>
+        );
     }
 }
 </pre></div>
