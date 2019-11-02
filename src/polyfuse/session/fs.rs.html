@@ -434,10 +434,6 @@
 <span id="434">434</span>
 <span id="435">435</span>
 <span id="436">436</span>
-<span id="437">437</span>
-<span id="438">438</span>
-<span id="439">439</span>
-<span id="440">440</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Filesystem abstraction.</span>
 
@@ -548,12 +544,9 @@
 
 <span class="doccomment">/// The filesystem running on the user space.</span>
 <span class="attribute">#[<span class="ident">async_trait</span>::<span class="ident">async_trait</span>]</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Send</span><span class="op">&gt;</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span> {
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Filesystem</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span> {
     <span class="doccomment">/// Handle a FUSE request from the kernel and reply with its result.</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">call</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>, <span class="ident">op</span>: <span class="ident">Operation</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">T</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="lifetime">&#39;async_trait</span>, <span class="comment">// https://github.com/dtolnay/async-trait/issues/8</span>
-    {
+    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">call</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>, <span class="ident">op</span>: <span class="ident">Operation</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="ident">drop</span>(<span class="ident">op</span>);
         <span class="ident">cx</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span>
     }
@@ -561,7 +554,7 @@
 
 <span class="doccomment">/// The kind of FUSE requests received from the kernel.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Operation</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Operation</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="doccomment">/// Look up a directory entry by name.</span>
     <span class="ident">Lookup</span> {
         <span class="ident">parent</span>: <span class="ident">u64</span>,
@@ -678,8 +671,7 @@
         <span class="ident">ino</span>: <span class="ident">u64</span>,
         <span class="ident">fh</span>: <span class="ident">u64</span>,
         <span class="ident">offset</span>: <span class="ident">u64</span>,
-        <span class="ident">data</span>: <span class="ident">T</span>,
-        <span class="ident">size</span>: <span class="ident">u32</span>,
+        <span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>],
         <span class="ident">flags</span>: <span class="ident">u32</span>,
         <span class="ident">lock_owner</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>,
         <span class="ident">reply</span>: <span class="ident">ReplyWrite</span>,

@@ -657,7 +657,6 @@
 <span id="657">657</span>
 <span id="658">658</span>
 <span id="659">659</span>
-<span id="660">660</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Lowlevel interface to handle FUSE requests.</span>
 
@@ -797,16 +796,15 @@
 
     <span class="doccomment">/// Process an incoming request using the specified filesystem operations.</span>
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">cognitive_complexity</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">process</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">T</span>, <span class="ident">W</span><span class="op">&gt;</span>(
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">process</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">W</span><span class="op">&gt;</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">fs</span>: <span class="kw-2">&amp;</span><span class="ident">F</span>,
         <span class="ident">req</span>: <span class="ident">Request</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-        <span class="ident">data</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
+        <span class="ident">data</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span>,
         <span class="ident">writer</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-        <span class="ident">T</span>: <span class="ident">Send</span>,
+        <span class="ident">F</span>: <span class="ident">Filesystem</span>,
         <span class="ident">W</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Unpin</span>,
     {
         <span class="kw">let</span> <span class="ident">Request</span> { <span class="ident">header</span>, <span class="ident">kind</span>, .. } <span class="op">=</span> <span class="ident">req</span>;
@@ -1001,12 +999,12 @@
             }
             <span class="ident">RequestKind</span>::<span class="ident">Write</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="kw">match</span> <span class="ident">data</span> {
                 <span class="prelude-val">Some</span>(<span class="ident">data</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="macro">debug_assert_eq</span><span class="macro">!</span>(<span class="ident">data</span>.<span class="ident">len</span>(), <span class="ident">arg</span>.<span class="ident">size</span> <span class="kw">as</span> <span class="ident">usize</span>);
                     <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Write</span> {
                         <span class="ident">ino</span>,
                         <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
                         <span class="ident">offset</span>: <span class="ident">arg</span>.<span class="ident">offset</span>,
                         <span class="ident">data</span>,
-                        <span class="ident">size</span>: <span class="ident">arg</span>.<span class="ident">size</span>,
                         <span class="ident">flags</span>: <span class="ident">arg</span>.<span class="ident">flags</span>,
                         <span class="ident">lock_owner</span>: <span class="ident">arg</span>.<span class="ident">lock_owner</span>(),
                         <span class="ident">reply</span>: <span class="ident">ReplyWrite</span>::<span class="ident">new</span>(),
