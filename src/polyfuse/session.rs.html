@@ -845,6 +845,74 @@
 <span id="845">845</span>
 <span id="846">846</span>
 <span id="847">847</span>
+<span id="848">848</span>
+<span id="849">849</span>
+<span id="850">850</span>
+<span id="851">851</span>
+<span id="852">852</span>
+<span id="853">853</span>
+<span id="854">854</span>
+<span id="855">855</span>
+<span id="856">856</span>
+<span id="857">857</span>
+<span id="858">858</span>
+<span id="859">859</span>
+<span id="860">860</span>
+<span id="861">861</span>
+<span id="862">862</span>
+<span id="863">863</span>
+<span id="864">864</span>
+<span id="865">865</span>
+<span id="866">866</span>
+<span id="867">867</span>
+<span id="868">868</span>
+<span id="869">869</span>
+<span id="870">870</span>
+<span id="871">871</span>
+<span id="872">872</span>
+<span id="873">873</span>
+<span id="874">874</span>
+<span id="875">875</span>
+<span id="876">876</span>
+<span id="877">877</span>
+<span id="878">878</span>
+<span id="879">879</span>
+<span id="880">880</span>
+<span id="881">881</span>
+<span id="882">882</span>
+<span id="883">883</span>
+<span id="884">884</span>
+<span id="885">885</span>
+<span id="886">886</span>
+<span id="887">887</span>
+<span id="888">888</span>
+<span id="889">889</span>
+<span id="890">890</span>
+<span id="891">891</span>
+<span id="892">892</span>
+<span id="893">893</span>
+<span id="894">894</span>
+<span id="895">895</span>
+<span id="896">896</span>
+<span id="897">897</span>
+<span id="898">898</span>
+<span id="899">899</span>
+<span id="900">900</span>
+<span id="901">901</span>
+<span id="902">902</span>
+<span id="903">903</span>
+<span id="904">904</span>
+<span id="905">905</span>
+<span id="906">906</span>
+<span id="907">907</span>
+<span id="908">908</span>
+<span id="909">909</span>
+<span id="910">910</span>
+<span id="911">911</span>
+<span id="912">912</span>
+<span id="913">913</span>
+<span id="914">914</span>
+<span id="915">915</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Lowlevel interface to handle FUSE requests.</span>
 
@@ -885,7 +953,7 @@
     <span class="ident">fmt</span>, <span class="ident">io</span>, <span class="ident">mem</span>,
     <span class="ident">os</span>::<span class="ident">unix</span>::<span class="ident">ffi</span>::<span class="ident">OsStrExt</span>,
     <span class="ident">pin</span>::<span class="ident">Pin</span>,
-    <span class="ident">sync</span>::<span class="ident">atomic</span>::{<span class="ident">AtomicU64</span>, <span class="ident">Ordering</span>},
+    <span class="ident">sync</span>::<span class="ident">atomic</span>::{<span class="ident">AtomicBool</span>, <span class="ident">AtomicU64</span>, <span class="ident">Ordering</span>},
     <span class="ident">task</span>::{<span class="self">self</span>, <span class="ident">Poll</span>},
 };
 
@@ -916,14 +984,14 @@
     <span class="ident">proto_major</span>: <span class="ident">u32</span>,
     <span class="ident">proto_minor</span>: <span class="ident">u32</span>,
     <span class="ident">max_readahead</span>: <span class="ident">u32</span>,
-    <span class="ident">state</span>: <span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">SessionState</span><span class="op">&gt;</span>,
+    <span class="ident">exited</span>: <span class="ident">AtomicBool</span>,
+    <span class="ident">interrupt_state</span>: <span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">InterruptState</span><span class="op">&gt;</span>,
     <span class="ident">notify_unique</span>: <span class="ident">AtomicU64</span>,
     <span class="ident">notify_remains</span>: <span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">u64</span>, <span class="ident">oneshot</span>::<span class="ident">Sender</span><span class="op">&lt;</span>(<span class="ident">u64</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>)<span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">struct</span> <span class="ident">SessionState</span> {
-    <span class="ident">exited</span>: <span class="ident">bool</span>,
+<span class="kw">struct</span> <span class="ident">InterruptState</span> {
     <span class="ident">remains</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">u64</span>, <span class="ident">oneshot</span>::<span class="ident">Sender</span><span class="op">&lt;</span>()<span class="op">&gt;</span><span class="op">&gt;</span>,
     <span class="ident">interrupted</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>,
 }
@@ -992,8 +1060,8 @@
                 <span class="ident">proto_major</span>,
                 <span class="ident">proto_minor</span>,
                 <span class="ident">max_readahead</span>,
-                <span class="ident">state</span>: <span class="ident">Mutex</span>::<span class="ident">new</span>(<span class="ident">SessionState</span> {
-                    <span class="ident">exited</span>: <span class="bool-val">false</span>,
+                <span class="ident">exited</span>: <span class="ident">AtomicBool</span>::<span class="ident">new</span>(<span class="bool-val">false</span>),
+                <span class="ident">interrupt_state</span>: <span class="ident">Mutex</span>::<span class="ident">new</span>(<span class="ident">InterruptState</span> {
                     <span class="ident">remains</span>: <span class="ident">HashMap</span>::<span class="ident">new</span>(),
                     <span class="ident">interrupted</span>: <span class="ident">HashSet</span>::<span class="ident">new</span>(),
                 }),
@@ -1001,6 +1069,14 @@
                 <span class="ident">notify_remains</span>: <span class="ident">Mutex</span>::<span class="ident">new</span>(<span class="ident">HashMap</span>::<span class="ident">new</span>()),
             });
         }
+    }
+
+    <span class="kw">fn</span> <span class="ident">exit</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+        <span class="self">self</span>.<span class="ident">exited</span>.<span class="ident">store</span>(<span class="bool-val">true</span>, <span class="ident">Ordering</span>::<span class="ident">SeqCst</span>);
+    }
+
+    <span class="kw">fn</span> <span class="ident">exited</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
+        <span class="self">self</span>.<span class="ident">exited</span>.<span class="ident">load</span>(<span class="ident">Ordering</span>::<span class="ident">SeqCst</span>)
     }
 
     <span class="doccomment">/// Process an incoming request using the specified filesystem operations.</span>
@@ -1016,17 +1092,16 @@
         <span class="ident">F</span>: <span class="ident">Filesystem</span>,
         <span class="ident">W</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Unpin</span>,
     {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">exited</span>() {
+            <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;The sesson has already been exited&quot;</span>);
+            <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
+        }
+
         <span class="kw">let</span> <span class="ident">Request</span> { <span class="ident">header</span>, <span class="ident">kind</span>, .. } <span class="op">=</span> <span class="ident">req</span>;
         <span class="kw">let</span> <span class="ident">ino</span> <span class="op">=</span> <span class="ident">header</span>.<span class="ident">nodeid</span>;
 
         {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">lock</span>().<span class="kw">await</span>;
-
-            <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">exited</span> {
-                <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;The sesson has already been exited&quot;</span>);
-                <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
-            }
-
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">interrupt_state</span>.<span class="ident">lock</span>().<span class="kw">await</span>;
             <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">interrupted</span>.<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">header</span>.<span class="ident">unique</span>) {
                 <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;The request was interrupted (unique={})&quot;</span>, <span class="ident">header</span>.<span class="ident">unique</span>);
                 <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
@@ -1047,12 +1122,12 @@
 
         <span class="kw">match</span> <span class="ident">kind</span> {
             <span class="ident">RequestKind</span>::<span class="ident">Init</span> { .. } <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;&quot;</span>);
+                <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;ignore an INIT request after initializing the session&quot;</span>);
                 <span class="ident">cx</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">EIO</span>).<span class="kw">await</span><span class="question-mark">?</span>;
             }
             <span class="ident">RequestKind</span>::<span class="ident">Destroy</span> <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">lock</span>().<span class="kw">await</span>.<span class="ident">exited</span> <span class="op">=</span> <span class="bool-val">true</span>;
-                <span class="ident">cx</span>.<span class="ident">reply</span>(<span class="kw-2">&amp;</span>[]).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="self">self</span>.<span class="ident">exit</span>();
+                <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
             }
             <span class="ident">RequestKind</span>::<span class="ident">Interrupt</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="self">self</span>.<span class="ident">send_interrupt</span>(<span class="ident">arg</span>.<span class="ident">unique</span>).<span class="kw">await</span>;
@@ -1436,7 +1511,7 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Notify the inode invalidation to the kernel.</span>
+    <span class="doccomment">/// Notify the cache invalidation about an inode to the kernel.</span>
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">notify_inval_inode</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">writer</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>,
@@ -1447,6 +1522,13 @@
     <span class="kw">where</span>
         <span class="ident">W</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
     {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">exited</span>() {
+            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(
+                <span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">NotConnected</span>,
+                <span class="string">&quot;session is closed&quot;</span>,
+            ));
+        }
+
         <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">fuse_notify_inval_inode_out</span> {
             <span class="ident">ino</span>,
             <span class="ident">off</span>,
@@ -1461,7 +1543,7 @@
         .<span class="kw">await</span>
     }
 
-    <span class="doccomment">/// Notify the invalidation of an entry to the kernel.</span>
+    <span class="doccomment">/// Notify the invalidation about a directory entry to the kernel.</span>
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">notify_inval_entry</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">writer</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>,
@@ -1471,6 +1553,13 @@
     <span class="kw">where</span>
         <span class="ident">W</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
     {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">exited</span>() {
+            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(
+                <span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">NotConnected</span>,
+                <span class="string">&quot;session is closed&quot;</span>,
+            ));
+        }
+
         <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">name</span>.<span class="ident">as_ref</span>();
         <span class="kw">let</span> <span class="ident">namelen</span> <span class="op">=</span> <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">name</span>.<span class="ident">len</span>()).<span class="ident">unwrap</span>();
         <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">fuse_notify_inval_entry_out</span> {
@@ -1486,6 +1575,12 @@
         .<span class="kw">await</span>
     }
 
+    <span class="doccomment">/// Notify the invalidation about a directory entry to the kernel.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// The role of this notification is similar to `notify_inval_entry`.</span>
+    <span class="doccomment">/// Additionally, when the provided `child` inode matches the inode</span>
+    <span class="doccomment">/// in the dentry cache, the inotify will inform the deletion to</span>
+    <span class="doccomment">/// watchers if exists.</span>
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">notify_delete</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">writer</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>,
@@ -1496,6 +1591,13 @@
     <span class="kw">where</span>
         <span class="ident">W</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
     {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">exited</span>() {
+            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(
+                <span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">NotConnected</span>,
+                <span class="string">&quot;session is closed&quot;</span>,
+            ));
+        }
+
         <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">name</span>.<span class="ident">as_ref</span>();
         <span class="kw">let</span> <span class="ident">namelen</span> <span class="op">=</span> <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">name</span>.<span class="ident">len</span>()).<span class="ident">unwrap</span>();
         <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">fuse_notify_delete_out</span> {
@@ -1512,6 +1614,7 @@
         .<span class="kw">await</span>
     }
 
+    <span class="doccomment">/// Push the data in an inode for updating the kernel cache.</span>
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">notify_store</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">writer</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>,
@@ -1522,6 +1625,13 @@
     <span class="kw">where</span>
         <span class="ident">W</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
     {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">exited</span>() {
+            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(
+                <span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">NotConnected</span>,
+                <span class="string">&quot;session is closed&quot;</span>,
+            ));
+        }
+
         <span class="kw">let</span> <span class="ident">size</span> <span class="op">=</span> <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">data</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> <span class="ident">t</span>.<span class="ident">len</span>()).<span class="ident">sum</span>::<span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>()).<span class="ident">unwrap</span>();
         <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">fuse_notify_store_out</span> {
             <span class="ident">nodeid</span>: <span class="ident">ino</span>,
@@ -1536,6 +1646,7 @@
         <span class="ident">send_notify</span>(<span class="ident">writer</span>, <span class="ident">fuse_notify_code</span>::<span class="ident">FUSE_NOTIFY_STORE</span>, <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">data</span>).<span class="kw">await</span>
     }
 
+    <span class="doccomment">/// Retrieve data in an inode from the kernel cache.</span>
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">notify_retrieve</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">writer</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>,
@@ -1546,6 +1657,13 @@
     <span class="kw">where</span>
         <span class="ident">W</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
     {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">exited</span>() {
+            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(
+                <span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">NotConnected</span>,
+                <span class="string">&quot;session is closed&quot;</span>,
+            ));
+        }
+
         <span class="kw">let</span> <span class="ident">notify_unique</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">notify_unique</span>.<span class="ident">fetch_add</span>(<span class="number">1</span>, <span class="ident">Ordering</span>::<span class="ident">SeqCst</span>);
 
         <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) <span class="op">=</span> <span class="ident">oneshot</span>::<span class="ident">channel</span>();
@@ -1565,19 +1683,22 @@
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="ident">NotifyRetrieve</span>(<span class="ident">rx</span>))
+        <span class="prelude-val">Ok</span>(<span class="ident">NotifyRetrieve</span> {
+            <span class="ident">unique</span>: <span class="ident">notify_unique</span>,
+            <span class="ident">rx</span>: <span class="ident">rx</span>.<span class="ident">fuse</span>(),
+        })
     }
 
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">enable_interrupt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">unique</span>: <span class="ident">u64</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Interrupt</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">lock</span>().<span class="kw">await</span>;
         <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) <span class="op">=</span> <span class="ident">oneshot</span>::<span class="ident">channel</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">interrupt_state</span>.<span class="ident">lock</span>().<span class="kw">await</span>;
         <span class="ident">state</span>.<span class="ident">remains</span>.<span class="ident">insert</span>(<span class="ident">unique</span>, <span class="ident">tx</span>);
         <span class="ident">Interrupt</span>(<span class="ident">rx</span>.<span class="ident">fuse</span>())
     }
 
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">send_interrupt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">unique</span>: <span class="ident">u64</span>) {
         <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;INTERRUPT (unique = {:?})&quot;</span>, <span class="ident">unique</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">lock</span>().<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">interrupt_state</span>.<span class="ident">lock</span>().<span class="kw">await</span>;
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="ident">state</span>.<span class="ident">remains</span>.<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">unique</span>) {
             <span class="ident">state</span>.<span class="ident">interrupted</span>.<span class="ident">insert</span>(<span class="ident">unique</span>);
             <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">tx</span>.<span class="ident">send</span>(());
@@ -1674,13 +1795,28 @@
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">NotifyRetrieve</span>(<span class="ident">oneshot</span>::<span class="ident">Receiver</span><span class="op">&lt;</span>(<span class="ident">u64</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>)<span class="op">&gt;</span>);
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">NotifyRetrieve</span> {
+    <span class="ident">unique</span>: <span class="ident">u64</span>,
+    <span class="ident">rx</span>: <span class="ident">Fuse</span><span class="op">&lt;</span><span class="ident">oneshot</span>::<span class="ident">Receiver</span><span class="op">&lt;</span>(<span class="ident">u64</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>)<span class="op">&gt;</span><span class="op">&gt;</span>,
+}
+
+<span class="kw">impl</span> <span class="ident">NotifyRetrieve</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">unique</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u64</span> {
+        <span class="self">self</span>.<span class="ident">unique</span>
+    }
+}
 
 <span class="kw">impl</span> <span class="ident">Future</span> <span class="kw">for</span> <span class="ident">NotifyRetrieve</span> {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> (<span class="ident">u64</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>);
 
     <span class="kw">fn</span> <span class="ident">poll</span>(<span class="kw-2">mut</span> <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">task</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Output</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">poll_unpin</span>(<span class="ident">cx</span>).<span class="ident">map</span>(<span class="op">|</span><span class="ident">res</span><span class="op">|</span> <span class="ident">res</span>.<span class="ident">expect</span>(<span class="string">&quot;canceled&quot;</span>))
+        <span class="self">self</span>.<span class="ident">rx</span>.<span class="ident">poll_unpin</span>(<span class="ident">cx</span>).<span class="ident">map</span>(<span class="op">|</span><span class="ident">res</span><span class="op">|</span> <span class="ident">res</span>.<span class="ident">expect</span>(<span class="string">&quot;canceled&quot;</span>))
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">FusedFuture</span> <span class="kw">for</span> <span class="ident">NotifyRetrieve</span> {
+    <span class="kw">fn</span> <span class="ident">is_terminated</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
+        <span class="self">self</span>.<span class="ident">rx</span>.<span class="ident">is_terminated</span>()
     }
 }
 
