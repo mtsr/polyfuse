@@ -573,55 +573,6 @@
 <span id="573">573</span>
 <span id="574">574</span>
 <span id="575">575</span>
-<span id="576">576</span>
-<span id="577">577</span>
-<span id="578">578</span>
-<span id="579">579</span>
-<span id="580">580</span>
-<span id="581">581</span>
-<span id="582">582</span>
-<span id="583">583</span>
-<span id="584">584</span>
-<span id="585">585</span>
-<span id="586">586</span>
-<span id="587">587</span>
-<span id="588">588</span>
-<span id="589">589</span>
-<span id="590">590</span>
-<span id="591">591</span>
-<span id="592">592</span>
-<span id="593">593</span>
-<span id="594">594</span>
-<span id="595">595</span>
-<span id="596">596</span>
-<span id="597">597</span>
-<span id="598">598</span>
-<span id="599">599</span>
-<span id="600">600</span>
-<span id="601">601</span>
-<span id="602">602</span>
-<span id="603">603</span>
-<span id="604">604</span>
-<span id="605">605</span>
-<span id="606">606</span>
-<span id="607">607</span>
-<span id="608">608</span>
-<span id="609">609</span>
-<span id="610">610</span>
-<span id="611">611</span>
-<span id="612">612</span>
-<span id="613">613</span>
-<span id="614">614</span>
-<span id="615">615</span>
-<span id="616">616</span>
-<span id="617">617</span>
-<span id="618">618</span>
-<span id="619">619</span>
-<span id="620">620</span>
-<span id="621">621</span>
-<span id="622">622</span>
-<span id="623">623</span>
-<span id="624">624</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">bytes</span>::{<span class="ident">Bytes</span>, <span class="ident">BytesMut</span>};
 <span class="kw">use</span> <span class="ident">futures</span>::<span class="ident">io</span>::{<span class="ident">AsyncRead</span>, <span class="ident">AsyncReadExt</span>};
@@ -823,55 +774,6 @@
 <span class="comment">// TODO: add opcodes:</span>
 <span class="comment">// Ioctl,</span>
 <span class="comment">// Poll,</span>
-
-<span class="kw">trait</span> <span class="ident">FromBytes</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">const</span> <span class="ident">SIZE</span>: <span class="ident">usize</span>;
-
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">from_bytes</span>(<span class="ident">bytes</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">Self</span>;
-}
-
-<span class="macro">macro_rules</span><span class="macro">!</span> <span class="ident">impl_from_bytes</span> {
-    ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span>:<span class="ident">ty</span>,)<span class="kw-2">*</span>) <span class="op">=</span><span class="op">&gt;</span> {$(
-        <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">FromBytes</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-            <span class="kw">const</span> <span class="ident">SIZE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>();
-
-            <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">from_bytes</span>(<span class="ident">bytes</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">Self</span> {
-                <span class="macro">debug_assert_eq</span><span class="macro">!</span>(<span class="ident">bytes</span>.<span class="ident">len</span>(), <span class="self">Self</span>::<span class="ident">SIZE</span>);
-                <span class="kw-2">&amp;</span><span class="kw-2">*</span>(<span class="ident">bytes</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="self">Self</span>)
-            }
-        }
-    )<span class="kw-2">*</span>};
-}
-
-<span class="macro">impl_from_bytes</span><span class="macro">!</span> {
-    <span class="ident">fuse_in_header</span>,
-    <span class="ident">fuse_init_in</span>,
-    <span class="ident">fuse_forget_in</span>,
-    <span class="ident">fuse_getattr_in</span>,
-    <span class="ident">fuse_setattr_in</span>,
-    <span class="ident">fuse_mknod_in</span>,
-    <span class="ident">fuse_mkdir_in</span>,
-    <span class="ident">fuse_rename_in</span>,
-    <span class="ident">fuse_link_in</span>,
-    <span class="ident">fuse_open_in</span>,
-    <span class="ident">fuse_read_in</span>,
-    <span class="ident">fuse_write_in</span>,
-    <span class="ident">fuse_release_in</span>,
-    <span class="ident">fuse_fsync_in</span>,
-    <span class="ident">fuse_setxattr_in</span>,
-    <span class="ident">fuse_getxattr_in</span>,
-    <span class="ident">fuse_flush_in</span>,
-    <span class="ident">fuse_lk_in</span>,
-    <span class="ident">fuse_access_in</span>,
-    <span class="ident">fuse_create_in</span>,
-    <span class="ident">fuse_interrupt_in</span>,
-    <span class="ident">fuse_bmap_in</span>,
-    <span class="ident">fuse_fallocate_in</span>,
-    <span class="ident">fuse_rename2_in</span>,
-    <span class="ident">fuse_copy_file_range_in</span>,
-    <span class="ident">fuse_batch_forget_in</span>,
-    <span class="ident">fuse_notify_retrieve_in</span>,
-}
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Parser</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
