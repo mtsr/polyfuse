@@ -899,35 +899,20 @@
 <span id="899">899</span>
 <span id="900">900</span>
 <span id="901">901</span>
-<span id="902">902</span>
-<span id="903">903</span>
-<span id="904">904</span>
-<span id="905">905</span>
-<span id="906">906</span>
-<span id="907">907</span>
-<span id="908">908</span>
-<span id="909">909</span>
-<span id="910">910</span>
-<span id="911">911</span>
-<span id="912">912</span>
-<span id="913">913</span>
-<span id="914">914</span>
-<span id="915">915</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Lowlevel interface to handle FUSE requests.</span>
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">reply</span>;
 
-<span class="kw">mod</span> <span class="ident">buf</span>;
 <span class="kw">mod</span> <span class="ident">dirent</span>;
 <span class="kw">mod</span> <span class="ident">fs</span>;
 <span class="kw">mod</span> <span class="ident">request</span>;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">buf</span>::<span class="ident">Buffer</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">dirent</span>::{<span class="ident">DirEntry</span>, <span class="ident">DirEntryType</span>};
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">fs</span>::{<span class="ident">FileAttr</span>, <span class="ident">FileLock</span>, <span class="ident">Filesystem</span>, <span class="ident">Forget</span>, <span class="ident">FsStatistics</span>, <span class="ident">Operation</span>};
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">request</span>::<span class="ident">Request</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">request</span>::{<span class="ident">Request</span>, <span class="ident">RequestReader</span>};
 
+<span class="kw">use</span> <span class="ident">bytes</span>::<span class="ident">Bytes</span>;
 <span class="kw">use</span> <span class="ident">futures</span>::{
     <span class="ident">channel</span>::<span class="ident">oneshot</span>,
     <span class="ident">future</span>::{<span class="ident">Fuse</span>, <span class="ident">FusedFuture</span>, <span class="ident">Future</span>, <span class="ident">FutureExt</span>},
@@ -987,7 +972,7 @@
     <span class="ident">exited</span>: <span class="ident">AtomicBool</span>,
     <span class="ident">interrupt_state</span>: <span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">InterruptState</span><span class="op">&gt;</span>,
     <span class="ident">notify_unique</span>: <span class="ident">AtomicU64</span>,
-    <span class="ident">notify_remains</span>: <span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">u64</span>, <span class="ident">oneshot</span>::<span class="ident">Sender</span><span class="op">&lt;</span>(<span class="ident">u64</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>)<span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="ident">notify_remains</span>: <span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">u64</span>, <span class="ident">oneshot</span>::<span class="ident">Sender</span><span class="op">&lt;</span>(<span class="ident">u64</span>, <span class="ident">Bytes</span>)<span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
@@ -1006,17 +991,16 @@
         <span class="ident">I</span>: <span class="ident">AsyncRead</span> <span class="op">+</span> <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
     {
         <span class="ident">drop</span>(<span class="ident">initializer</span>);
-
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">Buffer</span>::<span class="ident">default</span>();
+        <span class="kw">let</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">RequestReader</span>::<span class="ident">default</span>();
 
         <span class="kw">loop</span> {
-            <span class="kw">let</span> <span class="ident">terminated</span> <span class="op">=</span> <span class="ident">buf</span>.<span class="ident">receive</span>(<span class="ident">io</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-            <span class="kw">if</span> <span class="ident">terminated</span> {
-                <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;the connection is closed&quot;</span>);
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">from_raw_os_error</span>(<span class="ident">libc</span>::<span class="ident">ENODEV</span>));
-            }
-
-            <span class="kw">let</span> (<span class="ident">Request</span> { <span class="ident">header</span>, <span class="ident">kind</span>, .. }, <span class="ident">_data</span>) <span class="op">=</span> <span class="ident">buf</span>.<span class="ident">decode</span>()<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">Request</span> { <span class="ident">header</span>, <span class="ident">kind</span>, .. } <span class="op">=</span> <span class="ident">reader</span>
+                .<span class="ident">receive</span>(<span class="ident">io</span>)
+                .<span class="kw">await</span><span class="question-mark">?</span> <span class="comment">//</span>
+                .<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> {
+                    <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;the connection is closed&quot;</span>);
+                    <span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">from_raw_os_error</span>(<span class="ident">libc</span>::<span class="ident">ENODEV</span>)
+                })<span class="question-mark">?</span>;
 
             <span class="kw">let</span> (<span class="ident">proto_major</span>, <span class="ident">proto_minor</span>, <span class="ident">max_readahead</span>);
             <span class="kw">match</span> <span class="ident">kind</span> {
@@ -1081,13 +1065,7 @@
 
     <span class="doccomment">/// Process an incoming request using the specified filesystem operations.</span>
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">cognitive_complexity</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">process</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">W</span><span class="op">&gt;</span>(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">fs</span>: <span class="kw-2">&amp;</span><span class="ident">F</span>,
-        <span class="ident">req</span>: <span class="ident">Request</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-        <span class="ident">data</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span>,
-        <span class="ident">writer</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">process</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">W</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fs</span>: <span class="kw-2">&amp;</span><span class="ident">F</span>, <span class="ident">req</span>: <span class="ident">Request</span>, <span class="ident">writer</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="ident">F</span>: <span class="ident">Filesystem</span>,
         <span class="ident">W</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Unpin</span>,
@@ -1109,7 +1087,7 @@
         }
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cx</span> <span class="op">=</span> <span class="ident">Context</span> {
-            <span class="ident">header</span>,
+            <span class="ident">header</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">header</span>,
             <span class="ident">writer</span>: <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw-2">*</span><span class="ident">writer</span>),
             <span class="ident">session</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>,
         };
@@ -1135,7 +1113,7 @@
             <span class="ident">RequestKind</span>::<span class="ident">Lookup</span> { <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Lookup</span> {
                     <span class="ident">parent</span>: <span class="ident">ino</span>,
-                    <span class="ident">name</span>,
+                    <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">name</span>,
                     <span class="ident">reply</span>: <span class="ident">ReplyEntry</span>::<span class="ident">new</span>(),
                 });
             }
@@ -1162,7 +1140,7 @@
                 <span class="ident">fs</span>.<span class="ident">call</span>(
                     <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">cx</span>,
                     <span class="ident">Operation</span>::<span class="ident">Forget</span> {
-                        <span class="ident">forgets</span>: <span class="ident">make_forgets</span>(<span class="ident">forgets</span>),
+                        <span class="ident">forgets</span>: <span class="ident">make_forgets</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">forgets</span>),
                     },
                 )
                 .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -1198,15 +1176,15 @@
             <span class="ident">RequestKind</span>::<span class="ident">Symlink</span> { <span class="ident">name</span>, <span class="ident">link</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Symlink</span> {
                     <span class="ident">parent</span>: <span class="ident">ino</span>,
-                    <span class="ident">name</span>,
-                    <span class="ident">link</span>,
+                    <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">name</span>,
+                    <span class="ident">link</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">link</span>,
                     <span class="ident">reply</span>: <span class="ident">ReplyEntry</span>::<span class="ident">new</span>(),
                 });
             }
             <span class="ident">RequestKind</span>::<span class="ident">Mknod</span> { <span class="ident">arg</span>, <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Mknod</span> {
                     <span class="ident">parent</span>: <span class="ident">ino</span>,
-                    <span class="ident">name</span>,
+                    <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">name</span>,
                     <span class="ident">mode</span>: <span class="ident">arg</span>.<span class="ident">mode</span>,
                     <span class="ident">rdev</span>: <span class="ident">arg</span>.<span class="ident">rdev</span>,
                     <span class="ident">umask</span>: <span class="prelude-val">Some</span>(<span class="ident">arg</span>.<span class="ident">umask</span>),
@@ -1216,7 +1194,7 @@
             <span class="ident">RequestKind</span>::<span class="ident">Mkdir</span> { <span class="ident">arg</span>, <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Mkdir</span> {
                     <span class="ident">parent</span>: <span class="ident">ino</span>,
-                    <span class="ident">name</span>,
+                    <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">name</span>,
                     <span class="ident">mode</span>: <span class="ident">arg</span>.<span class="ident">mode</span>,
                     <span class="ident">umask</span>: <span class="prelude-val">Some</span>(<span class="ident">arg</span>.<span class="ident">umask</span>),
                     <span class="ident">reply</span>: <span class="ident">ReplyEntry</span>::<span class="ident">new</span>(),
@@ -1225,23 +1203,23 @@
             <span class="ident">RequestKind</span>::<span class="ident">Unlink</span> { <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Unlink</span> {
                     <span class="ident">parent</span>: <span class="ident">ino</span>,
-                    <span class="ident">name</span>,
+                    <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">name</span>,
                     <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>::<span class="ident">new</span>(),
                 });
             }
             <span class="ident">RequestKind</span>::<span class="ident">Rmdir</span> { <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Rmdir</span> {
                     <span class="ident">parent</span>: <span class="ident">ino</span>,
-                    <span class="ident">name</span>,
+                    <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">name</span>,
                     <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>::<span class="ident">new</span>(),
                 });
             }
             <span class="ident">RequestKind</span>::<span class="ident">Rename</span> { <span class="ident">arg</span>, <span class="ident">name</span>, <span class="ident">newname</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Rename</span> {
                     <span class="ident">parent</span>: <span class="ident">ino</span>,
-                    <span class="ident">name</span>,
+                    <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">name</span>,
                     <span class="ident">newparent</span>: <span class="ident">arg</span>.<span class="ident">newdir</span>,
-                    <span class="ident">newname</span>,
+                    <span class="ident">newname</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">newname</span>,
                     <span class="ident">flags</span>: <span class="number">0</span>,
                     <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>::<span class="ident">new</span>(),
                 });
@@ -1249,9 +1227,9 @@
             <span class="ident">RequestKind</span>::<span class="ident">Rename2</span> { <span class="ident">arg</span>, <span class="ident">name</span>, <span class="ident">newname</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Rename</span> {
                     <span class="ident">parent</span>: <span class="ident">ino</span>,
-                    <span class="ident">name</span>,
+                    <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">name</span>,
                     <span class="ident">newparent</span>: <span class="ident">arg</span>.<span class="ident">newdir</span>,
-                    <span class="ident">newname</span>,
+                    <span class="ident">newname</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">newname</span>,
                     <span class="ident">flags</span>: <span class="ident">arg</span>.<span class="ident">flags</span>,
                     <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>::<span class="ident">new</span>(),
                 });
@@ -1260,7 +1238,7 @@
                 <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Link</span> {
                     <span class="ident">ino</span>: <span class="ident">arg</span>.<span class="ident">oldnodeid</span>,
                     <span class="ident">newparent</span>: <span class="ident">ino</span>,
-                    <span class="ident">newname</span>,
+                    <span class="ident">newname</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">newname</span>,
                     <span class="ident">reply</span>: <span class="ident">ReplyEntry</span>::<span class="ident">new</span>(),
                 });
             }
@@ -1281,21 +1259,18 @@
                     <span class="ident">reply</span>: <span class="ident">ReplyData</span>::<span class="ident">new</span>(<span class="ident">arg</span>.<span class="ident">size</span>),
                 });
             }
-            <span class="ident">RequestKind</span>::<span class="ident">Write</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="kw">match</span> <span class="ident">data</span> {
-                <span class="prelude-val">Some</span>(<span class="ident">data</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="macro">debug_assert_eq</span><span class="macro">!</span>(<span class="ident">data</span>.<span class="ident">len</span>(), <span class="ident">arg</span>.<span class="ident">size</span> <span class="kw">as</span> <span class="ident">usize</span>);
-                    <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Write</span> {
-                        <span class="ident">ino</span>,
-                        <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
-                        <span class="ident">offset</span>: <span class="ident">arg</span>.<span class="ident">offset</span>,
-                        <span class="ident">data</span>,
-                        <span class="ident">flags</span>: <span class="ident">arg</span>.<span class="ident">flags</span>,
-                        <span class="ident">lock_owner</span>: <span class="ident">arg</span>.<span class="ident">lock_owner</span>(),
-                        <span class="ident">reply</span>: <span class="ident">ReplyWrite</span>::<span class="ident">new</span>(),
-                    });
-                }
-                <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;unexpected condition&quot;</span>),
-            },
+            <span class="ident">RequestKind</span>::<span class="ident">Write</span> { <span class="ident">arg</span>, <span class="ident">data</span> } <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="macro">debug_assert_eq</span><span class="macro">!</span>(<span class="ident">data</span>.<span class="ident">len</span>(), <span class="ident">arg</span>.<span class="ident">size</span> <span class="kw">as</span> <span class="ident">usize</span>);
+                <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Write</span> {
+                    <span class="ident">ino</span>,
+                    <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
+                    <span class="ident">offset</span>: <span class="ident">arg</span>.<span class="ident">offset</span>,
+                    <span class="ident">data</span>,
+                    <span class="ident">flags</span>: <span class="ident">arg</span>.<span class="ident">flags</span>,
+                    <span class="ident">lock_owner</span>: <span class="ident">arg</span>.<span class="ident">lock_owner</span>(),
+                    <span class="ident">reply</span>: <span class="ident">ReplyWrite</span>::<span class="ident">new</span>(),
+                });
+            }
             <span class="ident">RequestKind</span>::<span class="ident">Release</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">flush</span> <span class="op">=</span> <span class="bool-val">false</span>;
                 <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">flock_release</span> <span class="op">=</span> <span class="bool-val">false</span>;
@@ -1335,8 +1310,8 @@
             <span class="ident">RequestKind</span>::<span class="ident">Setxattr</span> { <span class="ident">arg</span>, <span class="ident">name</span>, <span class="ident">value</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Setxattr</span> {
                     <span class="ident">ino</span>,
-                    <span class="ident">name</span>,
-                    <span class="ident">value</span>,
+                    <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">name</span>,
+                    <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">value</span>,
                     <span class="ident">flags</span>: <span class="ident">arg</span>.<span class="ident">flags</span>,
                     <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>::<span class="ident">new</span>(),
                 });
@@ -1344,7 +1319,7 @@
             <span class="ident">RequestKind</span>::<span class="ident">Getxattr</span> { <span class="ident">arg</span>, <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Getxattr</span> {
                     <span class="ident">ino</span>,
-                    <span class="ident">name</span>,
+                    <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">name</span>,
                     <span class="ident">size</span>: <span class="ident">arg</span>.<span class="ident">size</span>,
                     <span class="ident">reply</span>: <span class="ident">ReplyXattr</span>::<span class="ident">new</span>(),
                 });
@@ -1359,7 +1334,7 @@
             <span class="ident">RequestKind</span>::<span class="ident">Removexattr</span> { <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Removexattr</span> {
                     <span class="ident">ino</span>,
-                    <span class="ident">name</span>,
+                    <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">name</span>,
                     <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>::<span class="ident">new</span>(),
                 });
             }
@@ -1455,7 +1430,7 @@
             <span class="ident">RequestKind</span>::<span class="ident">Create</span> { <span class="ident">arg</span>, <span class="ident">name</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Create</span> {
                     <span class="ident">parent</span>: <span class="ident">ino</span>,
-                    <span class="ident">name</span>,
+                    <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">name</span>,
                     <span class="ident">mode</span>: <span class="ident">arg</span>.<span class="ident">mode</span>,
                     <span class="ident">umask</span>: <span class="prelude-val">Some</span>(<span class="ident">arg</span>.<span class="ident">umask</span>),
                     <span class="ident">open_flags</span>: <span class="ident">arg</span>.<span class="ident">flags</span>,
@@ -1494,13 +1469,10 @@
                 });
             }
 
-            <span class="ident">RequestKind</span>::<span class="ident">NotifyReply</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="kw">match</span> <span class="ident">data</span> {
-                <span class="prelude-val">Some</span>(<span class="ident">data</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="self">self</span>.<span class="ident">send_notify_reply</span>(<span class="ident">header</span>.<span class="ident">unique</span>, <span class="ident">arg</span>.<span class="ident">offset</span>, <span class="ident">data</span>.<span class="ident">to_vec</span>())
-                        .<span class="kw">await</span>;
-                }
-                <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">panic</span><span class="macro">!</span>(),
-            },
+            <span class="ident">RequestKind</span>::<span class="ident">NotifyReply</span> { <span class="ident">arg</span>, <span class="ident">data</span> } <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="self">self</span>.<span class="ident">send_notify_reply</span>(<span class="ident">header</span>.<span class="ident">unique</span>, <span class="ident">arg</span>.<span class="ident">offset</span>, <span class="ident">data</span>)
+                    .<span class="kw">await</span>;
+            }
 
             <span class="ident">RequestKind</span>::<span class="ident">Unknown</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;unsupported opcode: {:?}&quot;</span>, <span class="ident">header</span>.<span class="ident">opcode</span>);
@@ -1706,7 +1678,7 @@
         }
     }
 
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">send_notify_reply</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">unique</span>: <span class="ident">u64</span>, <span class="ident">offset</span>: <span class="ident">u64</span>, <span class="ident">data</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) {
+    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">send_notify_reply</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">unique</span>: <span class="ident">u64</span>, <span class="ident">offset</span>: <span class="ident">u64</span>, <span class="ident">data</span>: <span class="ident">Bytes</span>) {
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">notify_remains</span>.<span class="ident">lock</span>().<span class="kw">await</span>.<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">unique</span>) {
             <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">tx</span>.<span class="ident">send</span>((<span class="ident">offset</span>, <span class="ident">data</span>));
         }
@@ -1797,7 +1769,7 @@
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">NotifyRetrieve</span> {
     <span class="ident">unique</span>: <span class="ident">u64</span>,
-    <span class="ident">rx</span>: <span class="ident">Fuse</span><span class="op">&lt;</span><span class="ident">oneshot</span>::<span class="ident">Receiver</span><span class="op">&lt;</span>(<span class="ident">u64</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>)<span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="ident">rx</span>: <span class="ident">Fuse</span><span class="op">&lt;</span><span class="ident">oneshot</span>::<span class="ident">Receiver</span><span class="op">&lt;</span>(<span class="ident">u64</span>, <span class="ident">Bytes</span>)<span class="op">&gt;</span><span class="op">&gt;</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">NotifyRetrieve</span> {
@@ -1807,7 +1779,7 @@
 }
 
 <span class="kw">impl</span> <span class="ident">Future</span> <span class="kw">for</span> <span class="ident">NotifyRetrieve</span> {
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> (<span class="ident">u64</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>);
+    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> (<span class="ident">u64</span>, <span class="ident">Bytes</span>);
 
     <span class="kw">fn</span> <span class="ident">poll</span>(<span class="kw-2">mut</span> <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">task</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Output</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">rx</span>.<span class="ident">poll_unpin</span>(<span class="ident">cx</span>).<span class="ident">map</span>(<span class="op">|</span><span class="ident">res</span><span class="op">|</span> <span class="ident">res</span>.<span class="ident">expect</span>(<span class="string">&quot;canceled&quot;</span>))
