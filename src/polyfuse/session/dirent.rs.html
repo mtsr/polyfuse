@@ -277,7 +277,6 @@
 <span id="277">277</span>
 <span id="278">278</span>
 <span id="279">279</span>
-<span id="280">280</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">memoffset</span>::<span class="ident">offset_of</span>;
 <span class="kw">use</span> <span class="ident">polyfuse_sys</span>::<span class="ident">abi</span>::<span class="ident">fuse_dirent</span>;
@@ -319,7 +318,7 @@
 
 <span class="kw">impl</span> <span class="ident">DirEntry</span> {
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">cast_ptr_alignment</span>, <span class="ident">clippy</span>::<span class="ident">cast_lossless</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">name</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">OsStr</span><span class="op">&gt;</span>, <span class="ident">ino</span>: <span class="ident">u64</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">name</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">OsStr</span><span class="op">&gt;</span>, <span class="ident">ino</span>: <span class="ident">u64</span>, <span class="ident">off</span>: <span class="ident">u64</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">name</span>.<span class="ident">as_ref</span>().<span class="ident">as_bytes</span>();
         <span class="kw">let</span> <span class="ident">namelen</span> <span class="op">=</span> <span class="ident">u32</span>::<span class="ident">try_from</span>(<span class="ident">name</span>.<span class="ident">len</span>()).<span class="ident">expect</span>(<span class="string">&quot;the length of name is too large.&quot;</span>);
 
@@ -333,7 +332,7 @@
 
             <span class="kw">let</span> <span class="ident">pheader</span> <span class="op">=</span> <span class="ident">p</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw-2">mut</span> <span class="ident">fuse_dirent</span>;
             (<span class="kw-2">*</span><span class="ident">pheader</span>).<span class="ident">ino</span> <span class="op">=</span> <span class="ident">ino</span>;
-            (<span class="kw-2">*</span><span class="ident">pheader</span>).<span class="ident">off</span> <span class="op">=</span> <span class="number">0</span>;
+            (<span class="kw-2">*</span><span class="ident">pheader</span>).<span class="ident">off</span> <span class="op">=</span> <span class="ident">off</span>;
             (<span class="kw-2">*</span><span class="ident">pheader</span>).<span class="ident">namelen</span> <span class="op">=</span> <span class="ident">namelen</span>;
             (<span class="kw-2">*</span><span class="ident">pheader</span>).<span class="ident">typ</span> <span class="op">=</span> <span class="ident">DirEntryType</span>::<span class="ident">default</span>().<span class="number">0</span>;
 
@@ -350,14 +349,14 @@
         <span class="self">Self</span> { <span class="ident">dirent_buf</span> }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">dir</span>(<span class="ident">name</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">OsStr</span><span class="op">&gt;</span>, <span class="ident">ino</span>: <span class="ident">u64</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ent</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">new</span>(<span class="ident">name</span>, <span class="ident">ino</span>);
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">dir</span>(<span class="ident">name</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">OsStr</span><span class="op">&gt;</span>, <span class="ident">ino</span>: <span class="ident">u64</span>, <span class="ident">off</span>: <span class="ident">u64</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ent</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">new</span>(<span class="ident">name</span>, <span class="ident">ino</span>, <span class="ident">off</span>);
         <span class="ident">ent</span>.<span class="ident">set_typ</span>(<span class="ident">DirEntryType</span>::<span class="ident">DIR</span>);
         <span class="ident">ent</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">file</span>(<span class="ident">name</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">OsStr</span><span class="op">&gt;</span>, <span class="ident">ino</span>: <span class="ident">u64</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ent</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">new</span>(<span class="ident">name</span>, <span class="ident">ino</span>);
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">file</span>(<span class="ident">name</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">OsStr</span><span class="op">&gt;</span>, <span class="ident">ino</span>: <span class="ident">u64</span>, <span class="ident">off</span>: <span class="ident">u64</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ent</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">new</span>(<span class="ident">name</span>, <span class="ident">ino</span>, <span class="ident">off</span>);
         <span class="ident">ent</span>.<span class="ident">set_typ</span>(<span class="ident">DirEntryType</span>::<span class="ident">REG</span>);
         <span class="ident">ent</span>
     }
@@ -472,15 +471,14 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">smoke_debug</span>() {
-        <span class="kw">let</span> <span class="ident">dirent</span> <span class="op">=</span> <span class="ident">DirEntry</span>::<span class="ident">new</span>(<span class="string">&quot;hello&quot;</span>, <span class="number">1</span>);
-        <span class="macro">dbg</span><span class="macro">!</span>(<span class="ident">dirent</span>);
+        <span class="macro">dbg</span><span class="macro">!</span>(<span class="ident">DirEntry</span>::<span class="ident">new</span>(<span class="string">&quot;hello&quot;</span>, <span class="number">1</span>, <span class="number">0</span>));
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">new_dirent</span>() {
-        <span class="kw">let</span> <span class="ident">dirent</span> <span class="op">=</span> <span class="ident">DirEntry</span>::<span class="ident">new</span>(<span class="string">&quot;hello&quot;</span>, <span class="number">1</span>);
+        <span class="kw">let</span> <span class="ident">dirent</span> <span class="op">=</span> <span class="ident">DirEntry</span>::<span class="ident">new</span>(<span class="string">&quot;hello&quot;</span>, <span class="number">1</span>, <span class="number">42</span>);
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dirent</span>.<span class="ident">nodeid</span>(), <span class="number">1u64</span>);
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dirent</span>.<span class="ident">offset</span>(), <span class="number">0u64</span>);
+        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dirent</span>.<span class="ident">offset</span>(), <span class="number">42u64</span>);
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dirent</span>.<span class="ident">typ</span>(), <span class="ident">DirEntryType</span>::<span class="ident">UNKNOWN</span>);
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dirent</span>.<span class="ident">name</span>(), <span class="string">&quot;hello&quot;</span>);
 
@@ -489,7 +487,7 @@
             <span class="ident">dirent</span>.<span class="ident">as_ref</span>(),
             <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="macro">vec</span><span class="macro">!</span>[
                 <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="comment">// ino</span>
-                <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="comment">// off</span>
+                <span class="number">0x2a</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="comment">// off</span>
                 <span class="number">0x05</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="comment">// namlen</span>
                 <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="comment">// typ</span>
                 <span class="number">0x68</span>, <span class="number">0x65</span>, <span class="number">0x6c</span>, <span class="number">0x6c</span>, <span class="number">0x6f</span>, <span class="comment">// name</span>
@@ -501,7 +499,7 @@
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">cast_lossless</span>)]</span>
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">set_attributes</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">dirent</span> <span class="op">=</span> <span class="ident">DirEntry</span>::<span class="ident">new</span>(<span class="string">&quot;hello&quot;</span>, <span class="number">1</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">dirent</span> <span class="op">=</span> <span class="ident">DirEntry</span>::<span class="ident">new</span>(<span class="string">&quot;hello&quot;</span>, <span class="number">1</span>, <span class="number">0</span>);
 
         <span class="ident">dirent</span>.<span class="ident">set_nodeid</span>(<span class="number">2</span>);
         <span class="ident">dirent</span>.<span class="ident">set_offset</span>(<span class="number">90</span>);
@@ -514,10 +512,10 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">set_long_name</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">dirent</span> <span class="op">=</span> <span class="ident">DirEntry</span>::<span class="ident">new</span>(<span class="string">&quot;hello&quot;</span>, <span class="number">1</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">dirent</span> <span class="op">=</span> <span class="ident">DirEntry</span>::<span class="ident">new</span>(<span class="string">&quot;hello&quot;</span>, <span class="number">1</span>, <span class="number">42</span>);
         <span class="ident">dirent</span>.<span class="ident">set_name</span>(<span class="string">&quot;good evening&quot;</span>);
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dirent</span>.<span class="ident">nodeid</span>(), <span class="number">1u64</span>);
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dirent</span>.<span class="ident">offset</span>(), <span class="number">0u64</span>);
+        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dirent</span>.<span class="ident">offset</span>(), <span class="number">42u64</span>);
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dirent</span>.<span class="ident">typ</span>(), <span class="ident">DirEntryType</span>::<span class="ident">UNKNOWN</span>);
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dirent</span>.<span class="ident">name</span>(), <span class="string">&quot;good evening&quot;</span>);
 
@@ -526,7 +524,7 @@
             <span class="ident">dirent</span>.<span class="ident">as_ref</span>(),
             <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="macro">vec</span><span class="macro">!</span>[
                 <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="comment">// ino</span>
-                <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="comment">// off</span>
+                <span class="number">0x2a</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="comment">// off</span>
                 <span class="number">0x0c</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="comment">// namelen</span>
                 <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="comment">// typ</span>
                 <span class="number">0x67</span>, <span class="number">0x6f</span>, <span class="number">0x6f</span>, <span class="number">0x64</span>, <span class="number">0x20</span>, <span class="number">0x65</span>, <span class="number">0x76</span>, <span class="number">0x65</span>, <span class="number">0x6e</span>, <span class="number">0x69</span>, <span class="number">0x6e</span>,
@@ -538,10 +536,10 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">set_short_name</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">dirent</span> <span class="op">=</span> <span class="ident">DirEntry</span>::<span class="ident">new</span>(<span class="string">&quot;good morning&quot;</span>, <span class="number">1</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">dirent</span> <span class="op">=</span> <span class="ident">DirEntry</span>::<span class="ident">new</span>(<span class="string">&quot;good morning&quot;</span>, <span class="number">1</span>, <span class="number">42</span>);
         <span class="ident">dirent</span>.<span class="ident">set_name</span>(<span class="string">&quot;bye&quot;</span>);
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dirent</span>.<span class="ident">nodeid</span>(), <span class="number">1u64</span>);
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dirent</span>.<span class="ident">offset</span>(), <span class="number">0u64</span>);
+        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dirent</span>.<span class="ident">offset</span>(), <span class="number">42u64</span>);
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dirent</span>.<span class="ident">typ</span>(), <span class="ident">DirEntryType</span>::<span class="ident">UNKNOWN</span>);
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">dirent</span>.<span class="ident">name</span>(), <span class="string">&quot;bye&quot;</span>);
 
@@ -550,7 +548,7 @@
             <span class="ident">dirent</span>.<span class="ident">as_ref</span>(),
             <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="macro">vec</span><span class="macro">!</span>[
                 <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="comment">// ino</span>
-                <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="comment">// off</span>
+                <span class="number">0x2a</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="comment">// off</span>
                 <span class="number">0x03</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="comment">// namelen</span>
                 <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="comment">// typ</span>
                 <span class="number">0x62</span>, <span class="number">0x79</span>, <span class="number">0x65</span>, <span class="comment">// name</span>
