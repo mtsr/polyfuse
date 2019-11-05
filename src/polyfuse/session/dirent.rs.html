@@ -279,7 +279,7 @@
 <span id="279">279</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">memoffset</span>::<span class="ident">offset_of</span>;
-<span class="kw">use</span> <span class="ident">polyfuse_sys</span>::<span class="ident">abi</span>::<span class="ident">fuse_dirent</span>;
+<span class="kw">use</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">fuse_dirent</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">convert</span>::<span class="ident">TryFrom</span>, <span class="ident">ffi</span>::<span class="ident">OsStr</span>, <span class="ident">mem</span>, <span class="ident">os</span>::<span class="ident">unix</span>::<span class="ident">ffi</span>::<span class="ident">OsStrExt</span>, <span class="ident">ptr</span>};
 
 <span class="kw">fn</span> <span class="ident">aligned</span>(<span class="ident">len</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {

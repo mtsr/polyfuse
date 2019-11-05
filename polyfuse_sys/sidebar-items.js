@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["abi","FUSE application binary interface."],["v2","FFI bindings for libfuse2."]]});
+initSidebarItems({"mod":[["kernel","FUSE application binary interface."],["v2","FFI bindings for libfuse2."]]});

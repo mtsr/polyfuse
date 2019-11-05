@@ -255,7 +255,7 @@
 <span class="kw">use</span> <span class="ident">libc</span>::{<span class="ident">c_char</span>, <span class="ident">c_int</span>, <span class="ident">c_void</span>, <span class="ident">iovec</span>};
 <span class="kw">use</span> <span class="ident">mio</span>::{<span class="ident">unix</span>::<span class="ident">EventedFd</span>, <span class="ident">Evented</span>, <span class="ident">PollOpt</span>, <span class="ident">Ready</span>, <span class="ident">Token</span>};
 <span class="kw">use</span> <span class="ident">polyfuse_sys</span>::{
-    <span class="ident">abi</span>::<span class="ident">FUSE_DEV_IOC_CLONE</span>,
+    <span class="ident">kernel</span>::<span class="ident">FUSE_DEV_IOC_CLONE</span>,
     <span class="ident">v2</span>::{
         <span class="ident">fuse_args</span>, <span class="comment">//</span>
         <span class="ident">fuse_mount_compat25</span>,
