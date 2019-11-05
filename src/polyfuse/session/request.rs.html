@@ -557,22 +557,6 @@
 <span id="557">557</span>
 <span id="558">558</span>
 <span id="559">559</span>
-<span id="560">560</span>
-<span id="561">561</span>
-<span id="562">562</span>
-<span id="563">563</span>
-<span id="564">564</span>
-<span id="565">565</span>
-<span id="566">566</span>
-<span id="567">567</span>
-<span id="568">568</span>
-<span id="569">569</span>
-<span id="570">570</span>
-<span id="571">571</span>
-<span id="572">572</span>
-<span id="573">573</span>
-<span id="574">574</span>
-<span id="575">575</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">bytes</span>::{<span class="ident">Bytes</span>, <span class="ident">BytesMut</span>};
 <span class="kw">use</span> <span class="ident">futures</span>::<span class="ident">io</span>::{<span class="ident">AsyncRead</span>, <span class="ident">AsyncReadExt</span>};
@@ -1062,92 +1046,76 @@
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RequestReader</span> {
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">receive_msg</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>(
+    <span class="ident">reader</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">R</span>,
     <span class="ident">bufsize</span>: <span class="ident">usize</span>,
-}
-
-<span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">RequestReader</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="self">Self</span>::<span class="ident">new</span>(<span class="self">Self</span>::<span class="ident">DEFAULT_BUF_SIZE</span>)
-    }
-}
-
-<span class="kw">impl</span> <span class="ident">RequestReader</span> {
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">DEFAULT_BUF_SIZE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="kw">super</span>::<span class="ident">MAX_WRITE_SIZE</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">+</span> <span class="number">4096</span>;
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">bufsize</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">bufsize</span> }
+) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Request</span><span class="op">&gt;</span><span class="op">&gt;</span>
+<span class="kw">where</span>
+    <span class="ident">R</span>: <span class="ident">AsyncRead</span> <span class="op">+</span> <span class="ident">Unpin</span>,
+{
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">BytesMut</span>::<span class="ident">with_capacity</span>(<span class="ident">bufsize</span>);
+    <span class="kw">unsafe</span> {
+        <span class="kw">let</span> <span class="ident">capacity</span> <span class="op">=</span> <span class="ident">buf</span>.<span class="ident">capacity</span>();
+        <span class="ident">buf</span>.<span class="ident">set_len</span>(<span class="ident">capacity</span>);
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">receive</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">io</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">I</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Request</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">I</span>: <span class="ident">AsyncRead</span> <span class="op">+</span> <span class="ident">Unpin</span>,
-    {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">BytesMut</span>::<span class="ident">with_capacity</span>(<span class="self">self</span>.<span class="ident">bufsize</span>);
-        <span class="kw">unsafe</span> {
-            <span class="kw">let</span> <span class="ident">capacity</span> <span class="op">=</span> <span class="ident">buf</span>.<span class="ident">capacity</span>();
-            <span class="ident">buf</span>.<span class="ident">set_len</span>(<span class="ident">capacity</span>);
-        }
-
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="kw">loop</span> {
-            <span class="kw">match</span> <span class="ident">io</span>.<span class="ident">read</span>(<span class="ident">buf</span>.<span class="ident">as_mut</span>()).<span class="kw">await</span> {
-                <span class="prelude-val">Ok</span>(<span class="ident">count</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="kw">unsafe</span> {
-                        <span class="ident">buf</span>.<span class="ident">set_len</span>(<span class="ident">count</span>);
-                    }
-                    <span class="kw">break</span> <span class="ident">buf</span>.<span class="ident">freeze</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="kw">loop</span> {
+        <span class="kw">match</span> <span class="ident">reader</span>.<span class="ident">read</span>(<span class="ident">buf</span>.<span class="ident">as_mut</span>()).<span class="kw">await</span> {
+            <span class="prelude-val">Ok</span>(<span class="ident">count</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">unsafe</span> {
+                    <span class="ident">buf</span>.<span class="ident">set_len</span>(<span class="ident">count</span>);
                 }
-                <span class="prelude-val">Err</span>(<span class="ident">err</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">match</span> <span class="ident">err</span>.<span class="ident">raw_os_error</span>() {
-                    <span class="prelude-val">Some</span>(<span class="ident">libc</span>::<span class="ident">ENOENT</span>) <span class="op">|</span> <span class="prelude-val">Some</span>(<span class="ident">libc</span>::<span class="ident">EINTR</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                        <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;continue reading from the kernel&quot;</span>);
-                        <span class="kw">continue</span>;
-                    }
-                    <span class="prelude-val">Some</span>(<span class="ident">libc</span>::<span class="ident">ENODEV</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                        <span class="kw">unsafe</span> {
-                            <span class="ident">buf</span>.<span class="ident">set_len</span>(<span class="number">0</span>);
-                        }
-                        <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
-                    }
-                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {
-                        <span class="kw">unsafe</span> {
-                            <span class="ident">buf</span>.<span class="ident">set_len</span>(<span class="number">0</span>);
-                        }
-                        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">err</span>);
-                    }
-                },
+                <span class="kw">break</span> <span class="ident">buf</span>.<span class="ident">freeze</span>();
             }
-        };
-
-        <span class="kw">let</span> <span class="ident">total_len</span> <span class="op">=</span> <span class="ident">buf</span>.<span class="ident">len</span>();
-        <span class="kw">if</span> <span class="ident">total_len</span> <span class="op">&lt;</span> <span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">fuse_in_header</span><span class="op">&gt;</span>() {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(
-                <span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>,
-                <span class="string">&quot;the received data from the kernel is too short&quot;</span>,
-            ));
+            <span class="prelude-val">Err</span>(<span class="ident">err</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">match</span> <span class="ident">err</span>.<span class="ident">raw_os_error</span>() {
+                <span class="prelude-val">Some</span>(<span class="ident">libc</span>::<span class="ident">ENOENT</span>) <span class="op">|</span> <span class="prelude-val">Some</span>(<span class="ident">libc</span>::<span class="ident">EINTR</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;continue reading from the kernel&quot;</span>);
+                    <span class="kw">continue</span>;
+                }
+                <span class="prelude-val">Some</span>(<span class="ident">libc</span>::<span class="ident">ENODEV</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="kw">unsafe</span> {
+                        <span class="ident">buf</span>.<span class="ident">set_len</span>(<span class="number">0</span>);
+                    }
+                    <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
+                }
+                <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="kw">unsafe</span> {
+                        <span class="ident">buf</span>.<span class="ident">set_len</span>(<span class="number">0</span>);
+                    }
+                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">err</span>);
+                }
+            },
         }
+    };
 
-        <span class="kw">let</span> <span class="ident">header_bytes</span> <span class="op">=</span> <span class="ident">buf</span>.<span class="ident">split_to</span>(<span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">fuse_in_header</span><span class="op">&gt;</span>());
-        <span class="kw">let</span> <span class="ident">header</span>: <span class="ident">Shared</span><span class="op">&lt;</span><span class="ident">fuse_in_header</span><span class="op">&gt;</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">Shared</span>::<span class="ident">new_unchecked</span>(<span class="ident">header_bytes</span>) };
-
-        <span class="kw">if</span> <span class="ident">total_len</span> <span class="op">!</span><span class="op">=</span> <span class="ident">header</span>.<span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span> {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(
-                <span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>,
-                <span class="string">&quot;the payload length is mismatched to the header value&quot;</span>,
-            ));
-        }
-
-        <span class="kw">let</span> <span class="ident">opcode</span> <span class="op">=</span> <span class="ident">fuse_opcode</span>::<span class="ident">try_from</span>(<span class="ident">header</span>.<span class="ident">opcode</span>)
-            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>, <span class="ident">e</span>))<span class="question-mark">?</span>;
-
-        <span class="kw">let</span> <span class="ident">kind</span> <span class="op">=</span> <span class="ident">Parser</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">buf</span>).<span class="ident">parse</span>(<span class="ident">opcode</span>)<span class="question-mark">?</span>;
-
-        <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">Request</span> {
-            <span class="ident">header</span>,
-            <span class="ident">kind</span>,
-            <span class="ident">_p</span>: (),
-        }))
+    <span class="kw">let</span> <span class="ident">total_len</span> <span class="op">=</span> <span class="ident">buf</span>.<span class="ident">len</span>();
+    <span class="kw">if</span> <span class="ident">total_len</span> <span class="op">&lt;</span> <span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">fuse_in_header</span><span class="op">&gt;</span>() {
+        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(
+            <span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>,
+            <span class="string">&quot;the received data from the kernel is too short&quot;</span>,
+        ));
     }
+
+    <span class="kw">let</span> <span class="ident">header_bytes</span> <span class="op">=</span> <span class="ident">buf</span>.<span class="ident">split_to</span>(<span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">fuse_in_header</span><span class="op">&gt;</span>());
+    <span class="kw">let</span> <span class="ident">header</span>: <span class="ident">Shared</span><span class="op">&lt;</span><span class="ident">fuse_in_header</span><span class="op">&gt;</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">Shared</span>::<span class="ident">new_unchecked</span>(<span class="ident">header_bytes</span>) };
+
+    <span class="kw">if</span> <span class="ident">total_len</span> <span class="op">!</span><span class="op">=</span> <span class="ident">header</span>.<span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span> {
+        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(
+            <span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>,
+            <span class="string">&quot;the payload length is mismatched to the header value&quot;</span>,
+        ));
+    }
+
+    <span class="kw">let</span> <span class="ident">opcode</span> <span class="op">=</span> <span class="ident">fuse_opcode</span>::<span class="ident">try_from</span>(<span class="ident">header</span>.<span class="ident">opcode</span>)
+        .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>, <span class="ident">e</span>))<span class="question-mark">?</span>;
+
+    <span class="kw">let</span> <span class="ident">kind</span> <span class="op">=</span> <span class="ident">Parser</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">buf</span>).<span class="ident">parse</span>(<span class="ident">opcode</span>)<span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">Request</span> {
+        <span class="ident">header</span>,
+        <span class="ident">kind</span>,
+        <span class="ident">_p</span>: (),
+    }))
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p><p>You can look for items with an exact name by putting double quotes around your request: <code>"string"</code></p><p>Look for items inside another one by searching for a path: <code>vec::Vec</code></p></div></div></aside><script>window.rootPath = "../../../";window.currentCrate = "polyfuse";</script><script src="../../../aliases.js"></script><script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script><script defer src="../../../search-index.js"></script></body></html>
+</section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../../";window.currentCrate = "polyfuse";</script><script src="../../../aliases.js"></script><script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script><script defer src="../../../search-index.js"></script></body></html>
