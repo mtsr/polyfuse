@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Connection","A connection with the FUSE kernel driver."],["MountOptions",""]]});
+initSidebarItems({"fn":[["unite","Unite a pair of asynchrounous reader and writer into a single I/O object."]],"struct":[["Connection","A connection with the FUSE kernel driver."],["MountOptions",""],["Unite",""]]});
