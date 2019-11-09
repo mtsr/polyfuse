@@ -24,6 +24,7 @@
 <span id="24">24</span>
 <span id="25">25</span>
 <span id="26">26</span>
+<span id="27">27</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! FUSE (Filesystem in userspace) framework for Rust.</span>
 
@@ -42,12 +43,13 @@
 <span class="kw">mod</span> <span class="ident">lock</span>;
 <span class="kw">mod</span> <span class="ident">server</span>;
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">io</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">channel</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">session</span>;
 
 <span class="comment">// re-exports from sub modules.</span>
 <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">inline</span>)]</span>
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::{
+    <span class="ident">lock</span>::<span class="ident">Lock</span>,
     <span class="ident">server</span>::{<span class="ident">Notifier</span>, <span class="ident">Server</span>},
     <span class="ident">session</span>::{<span class="ident">Context</span>, <span class="ident">Filesystem</span>, <span class="ident">Operation</span>},
 };
