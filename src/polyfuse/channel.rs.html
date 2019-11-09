@@ -115,7 +115,6 @@
 <span id="115">115</span>
 <span id="116">116</span>
 <span id="117">117</span>
-<span id="118">118</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Establish connection with FUSE kernel driver.</span>
 
@@ -141,8 +140,7 @@
 
 <span class="kw">impl</span> <span class="ident">Channel</span> {
     <span class="doccomment">/// Establish a connection with the FUSE kernel driver.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">open</span>(<span class="ident">mountpoint</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span>, <span class="ident">mountopts</span>: <span class="ident">MountOptions</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">mountpoint</span> <span class="op">=</span> <span class="ident">mountpoint</span>.<span class="ident">as_ref</span>();
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">open</span>(<span class="ident">mountpoint</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>, <span class="ident">mountopts</span>: <span class="kw-2">&amp;</span><span class="ident">MountOptions</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">conn</span> <span class="op">=</span> <span class="ident">Connection</span>::<span class="ident">open</span>(<span class="ident">mountpoint</span>, <span class="ident">mountopts</span>)<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">evented</span> <span class="op">=</span> <span class="ident">PollEvented</span>::<span class="ident">new</span>(<span class="ident">conn</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="self">Self</span>(<span class="ident">evented</span>))
@@ -186,8 +184,8 @@
     }
 
     <span class="doccomment">/// Attempt to create a clone of this channel.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">conn</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">get_ref</span>().<span class="ident">try_clone</span>()<span class="question-mark">?</span>;
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ioc_clone</span>: <span class="ident">bool</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
+        <span class="kw">let</span> <span class="ident">conn</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">get_ref</span>().<span class="ident">try_clone</span>(<span class="ident">ioc_clone</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="self">Self</span>(<span class="ident">PollEvented</span>::<span class="ident">new</span>(<span class="ident">conn</span>)<span class="question-mark">?</span>))
     }
 }
