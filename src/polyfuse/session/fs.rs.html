@@ -507,7 +507,6 @@
 <span id="507">507</span>
 <span id="508">508</span>
 <span id="509">509</span>
-<span id="510">510</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Filesystem abstraction.</span>
 
@@ -531,7 +530,6 @@
     <span class="ident">Context</span>,
 };
 <span class="kw">use</span> <span class="ident">async_trait</span>::<span class="ident">async_trait</span>;
-<span class="kw">use</span> <span class="ident">bytes</span>::<span class="ident">Bytes</span>;
 <span class="kw">use</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::{
     <span class="ident">fuse_attr</span>, <span class="comment">//</span>
     <span class="ident">fuse_file_lock</span>,
@@ -808,7 +806,7 @@
         <span class="ident">ino</span>: <span class="ident">u64</span>,
         <span class="ident">fh</span>: <span class="ident">u64</span>,
         <span class="ident">offset</span>: <span class="ident">u64</span>,
-        <span class="ident">data</span>: <span class="ident">Bytes</span>,
+        <span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>],
         <span class="ident">flags</span>: <span class="ident">u32</span>,
         <span class="ident">lock_owner</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>,
         <span class="ident">reply</span>: <span class="ident">ReplyWrite</span>,
