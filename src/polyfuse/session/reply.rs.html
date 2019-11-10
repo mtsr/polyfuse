@@ -684,6 +684,33 @@
 <span id="684">684</span>
 <span id="685">685</span>
 <span id="686">686</span>
+<span id="687">687</span>
+<span id="688">688</span>
+<span id="689">689</span>
+<span id="690">690</span>
+<span id="691">691</span>
+<span id="692">692</span>
+<span id="693">693</span>
+<span id="694">694</span>
+<span id="695">695</span>
+<span id="696">696</span>
+<span id="697">697</span>
+<span id="698">698</span>
+<span id="699">699</span>
+<span id="700">700</span>
+<span id="701">701</span>
+<span id="702">702</span>
+<span id="703">703</span>
+<span id="704">704</span>
+<span id="705">705</span>
+<span id="706">706</span>
+<span id="707">707</span>
+<span id="708">708</span>
+<span id="709">709</span>
+<span id="710">710</span>
+<span id="711">711</span>
+<span id="712">712</span>
+<span id="713">713</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Replies to the kernel.</span>
 
@@ -701,10 +728,12 @@
     <span class="ident">fuse_notify_delete_out</span>,
     <span class="ident">fuse_notify_inval_entry_out</span>,
     <span class="ident">fuse_notify_inval_inode_out</span>,
+    <span class="ident">fuse_notify_poll_wakeup_out</span>,
     <span class="ident">fuse_notify_retrieve_out</span>,
     <span class="ident">fuse_notify_store_out</span>,
     <span class="ident">fuse_open_out</span>,
     <span class="ident">fuse_out_header</span>,
+    <span class="ident">fuse_poll_out</span>,
     <span class="ident">fuse_statfs_out</span>,
     <span class="ident">fuse_write_out</span>,
 };
@@ -749,11 +778,13 @@
     <span class="ident">fuse_statfs_out</span>,
     <span class="ident">fuse_lk_out</span>,
     <span class="ident">fuse_bmap_out</span>,
+    <span class="ident">fuse_poll_out</span>,
     <span class="ident">fuse_notify_inval_inode_out</span>,
     <span class="ident">fuse_notify_inval_entry_out</span>,
     <span class="ident">fuse_notify_delete_out</span>,
     <span class="ident">fuse_notify_store_out</span>,
     <span class="ident">fuse_notify_retrieve_out</span>,
+    <span class="ident">fuse_notify_poll_wakeup_out</span>,
 }
 
 <span class="doccomment">/// Reply with an empty output.</span>
@@ -1252,6 +1283,29 @@
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">block</span>(<span class="self">self</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>, <span class="ident">block</span>: <span class="ident">u64</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">fuse_bmap_out</span> {
             <span class="ident">block</span>,
+            ..<span class="ident">Default</span>::<span class="ident">default</span>()
+        };
+        <span class="ident">cx</span>.<span class="ident">reply</span>(<span class="ident">out</span>.<span class="ident">as_bytes</span>()).<span class="kw">await</span>
+    }
+}
+
+<span class="doccomment">/// Reply with the poll result.</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
+<span class="attribute">#[<span class="ident">must_use</span>]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ReplyPoll</span> {
+    <span class="ident">_p</span>: (),
+}
+
+<span class="kw">impl</span> <span class="ident">ReplyPoll</span> {
+    <span class="attribute">#[<span class="ident">inline</span>]</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="self">Self</span> { <span class="ident">_p</span>: () }
+    }
+
+    <span class="doccomment">/// Reply to the kernel with a poll event mask.</span>
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">events</span>(<span class="self">self</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>, <span class="ident">revents</span>: <span class="ident">u32</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">fuse_poll_out</span> {
+            <span class="ident">revents</span>,
             ..<span class="ident">Default</span>::<span class="ident">default</span>()
         };
         <span class="ident">cx</span>.<span class="ident">reply</span>(<span class="ident">out</span>.<span class="ident">as_bytes</span>()).<span class="kw">await</span>

@@ -560,6 +560,13 @@
 <span id="560">560</span>
 <span id="561">561</span>
 <span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">bytes</span>::{<span class="ident">Bytes</span>, <span class="ident">BytesMut</span>};
 <span class="kw">use</span> <span class="ident">futures</span>::{<span class="ident">future</span>::<span class="ident">poll_fn</span>, <span class="ident">io</span>::<span class="ident">AsyncRead</span>, <span class="ident">ready</span>};
@@ -586,6 +593,7 @@
     <span class="ident">fuse_notify_retrieve_in</span>,
     <span class="ident">fuse_opcode</span>,
     <span class="ident">fuse_open_in</span>,
+    <span class="ident">fuse_poll_in</span>,
     <span class="ident">fuse_read_in</span>,
     <span class="ident">fuse_release_in</span>,
     <span class="ident">fuse_rename2_in</span>,
@@ -753,12 +761,14 @@
         <span class="ident">arg</span>: <span class="ident">Shared</span><span class="op">&lt;</span><span class="ident">fuse_notify_retrieve_in</span><span class="op">&gt;</span>,
         <span class="ident">data</span>: <span class="ident">Bytes</span>,
     },
+    <span class="ident">Poll</span> {
+        <span class="ident">arg</span>: <span class="ident">Shared</span><span class="op">&lt;</span><span class="ident">fuse_poll_in</span><span class="op">&gt;</span>,
+    },
     <span class="ident">Unknown</span>,
 }
 
 <span class="comment">// TODO: add opcodes:</span>
 <span class="comment">// Ioctl,</span>
-<span class="comment">// Poll,</span>
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Parser</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
@@ -962,6 +972,10 @@
             <span class="ident">fuse_opcode</span>::<span class="ident">FUSE_COPY_FILE_RANGE</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(<span class="ident">RequestKind</span>::<span class="ident">CopyFileRange</span> { <span class="ident">arg</span> })
+            }
+            <span class="ident">fuse_opcode</span>::<span class="ident">FUSE_POLL</span> <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(<span class="ident">RequestKind</span>::<span class="ident">Poll</span> { <span class="ident">arg</span> })
             }
             <span class="ident">fuse_opcode</span>::<span class="ident">FUSE_BATCH_FORGET</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>::<span class="op">&lt;</span><span class="ident">fuse_batch_forget_in</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;

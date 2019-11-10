@@ -496,6 +496,18 @@
 <span id="496">496</span>
 <span id="497">497</span>
 <span id="498">498</span>
+<span id="499">499</span>
+<span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+<span id="503">503</span>
+<span id="504">504</span>
+<span id="505">505</span>
+<span id="506">506</span>
+<span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Filesystem abstraction.</span>
 
@@ -510,6 +522,7 @@
         <span class="ident">ReplyLk</span>,
         <span class="ident">ReplyOpen</span>,
         <span class="ident">ReplyOpendir</span>,
+        <span class="ident">ReplyPoll</span>,
         <span class="ident">ReplyReadlink</span>,
         <span class="ident">ReplyStatfs</span>,
         <span class="ident">ReplyWrite</span>,
@@ -990,10 +1003,21 @@
         <span class="ident">flags</span>: <span class="ident">u64</span>,
         <span class="ident">reply</span>: <span class="ident">ReplyWrite</span>,
     },
+
+    <span class="doccomment">/// Poll for readiness.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// When `kh` is not `None`, the filesystem should send</span>
+    <span class="doccomment">/// the notification about I/O readiness to the kernel.</span>
+    <span class="ident">Poll</span> {
+        <span class="ident">ino</span>: <span class="ident">u64</span>,
+        <span class="ident">fh</span>: <span class="ident">u64</span>,
+        <span class="ident">events</span>: <span class="ident">u32</span>,
+        <span class="ident">kh</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>,
+        <span class="ident">reply</span>: <span class="ident">ReplyPoll</span>,
+    },
 }
 
 <span class="comment">// TODO: add operations:</span>
 <span class="comment">// Ioctl</span>
-<span class="comment">// Poll</span>
 </pre></div>
 </section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../../";window.currentCrate = "polyfuse";</script><script src="../../../aliases.js"></script><script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script><script defer src="../../../search-index.js"></script></body></html>
