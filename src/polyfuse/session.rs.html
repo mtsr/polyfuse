@@ -980,8 +980,12 @@
 <span id="980">980</span>
 <span id="981">981</span>
 <span id="982">982</span>
+<span id="983">983</span>
+<span id="984">984</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Lowlevel interface to handle FUSE requests.</span>
+
+<span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">needless_update</span>)]</span>
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">reply</span>;
 
@@ -1749,7 +1753,7 @@
         };
         <span class="kw">let</span> <span class="ident">data</span>: <span class="ident">SmallVec</span><span class="op">&lt;</span>[<span class="kw">_</span>; <span class="number">4</span>]<span class="op">&gt;</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">out</span>.<span class="ident">as_bytes</span>())
             .<span class="ident">into_iter</span>()
-            .<span class="ident">chain</span>(<span class="ident">data</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="kw-2">*</span><span class="ident">s</span>))
+            .<span class="ident">chain</span>(<span class="ident">data</span>.<span class="ident">iter</span>().<span class="ident">copied</span>())
             .<span class="ident">collect</span>();
         <span class="ident">send_notify</span>(<span class="ident">writer</span>, <span class="ident">fuse_notify_code</span>::<span class="ident">FUSE_NOTIFY_STORE</span>, <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">data</span>).<span class="kw">await</span>
     }
