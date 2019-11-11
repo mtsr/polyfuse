@@ -998,6 +998,7 @@
 <span id="998"> 998</span>
 <span id="999"> 999</span>
 <span id="1000">1000</span>
+<span id="1001">1001</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! FUSE application binary interface.</span>
 <span class="doccomment">//!</span>
@@ -1065,6 +1066,7 @@
 <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">FUSE_ABORT_ERROR</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">21</span>;
 <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">FUSE_MAX_PAGES</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">22</span>;
 <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">FUSE_CACHE_SYMLINKS</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">23</span>;
+<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">FUSE_NO_OPENDIR_SUPPORT</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">24</span>;
 
 <span class="comment">// CUSE INIT request/reply flags.</span>
 <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">CUSE_UNRESTRICTED_IOCTL</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">0</span>;
