@@ -1298,8 +1298,6 @@
 <span id="1298">1298</span>
 <span id="1299">1299</span>
 <span id="1300">1300</span>
-<span id="1301">1301</span>
-<span id="1302">1302</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Lowlevel interface to handle FUSE requests.</span>
 
@@ -1316,7 +1314,7 @@
 
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">dirent</span>::{<span class="ident">DirEntry</span>, <span class="ident">DirEntryType</span>};
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">fs</span>::{<span class="ident">FileAttr</span>, <span class="ident">FileLock</span>, <span class="ident">Filesystem</span>, <span class="ident">Forget</span>, <span class="ident">FsStatistics</span>, <span class="ident">Operation</span>};
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">request</span>::<span class="ident">Request</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">request</span>::{<span class="ident">Request</span>, <span class="ident">RequestReader</span>};
 
 <span class="kw">use</span> <span class="ident">bitflags</span>::<span class="ident">bitflags</span>;
 <span class="kw">use</span> <span class="ident">bytes</span>::<span class="ident">Bytes</span>;
@@ -1376,7 +1374,7 @@
     <span class="ident">ReplyWrite</span>,
     <span class="ident">ReplyXattr</span>,
 };
-<span class="kw">use</span> <span class="ident">request</span>::{<span class="ident">receive_msg</span>, <span class="ident">RequestKind</span>};
+<span class="kw">use</span> <span class="ident">request</span>::<span class="ident">RequestKind</span>;
 
 <span class="comment">// The minimum supported ABI minor version by polyfuse.</span>
 <span class="kw">const</span> <span class="ident">MINIMUM_SUPPORTED_MINOR_VERSION</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="number">23</span>;
@@ -1421,13 +1419,15 @@
         <span class="ident">I</span>: <span class="ident">AsyncRead</span> <span class="op">+</span> <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
     {
         <span class="kw">loop</span> {
-            <span class="kw">let</span> <span class="ident">init_bufsize</span> <span class="op">=</span> <span class="ident">BUFFER_HEADER_SIZE</span> <span class="op">+</span> <span class="kw-2">*</span><span class="ident">PAGE_SIZE</span> <span class="op">*</span> <span class="ident">MAX_MAX_PAGES</span>;
-            <span class="kw">let</span> <span class="ident">Request</span> { <span class="ident">header</span>, <span class="ident">kind</span>, .. } <span class="op">=</span> <span class="ident">receive_msg</span>(<span class="ident">io</span>, <span class="ident">init_bufsize</span>)
-                .<span class="kw">await</span><span class="question-mark">?</span> <span class="comment">//</span>
-                .<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> {
-                    <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;connection has already been closed&quot;</span>);
-                    <span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">from_raw_os_error</span>(<span class="ident">libc</span>::<span class="ident">ENODEV</span>)
-                })<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">req</span> <span class="op">=</span> <span class="ident">Request</span>::<span class="ident">new</span>(<span class="ident">BUFFER_HEADER_SIZE</span> <span class="op">+</span> <span class="kw-2">*</span><span class="ident">PAGE_SIZE</span> <span class="op">*</span> <span class="ident">MAX_MAX_PAGES</span>);
+
+            <span class="kw">let</span> <span class="ident">terminated</span> <span class="op">=</span> <span class="ident">req</span>.<span class="ident">receive</span>(<span class="ident">io</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="kw">if</span> <span class="ident">terminated</span> {
+                <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;connection has already been closed&quot;</span>);
+                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">from_raw_os_error</span>(<span class="ident">libc</span>::<span class="ident">ENODEV</span>));
+            }
+
+            <span class="kw">let</span> (<span class="ident">header</span>, <span class="ident">kind</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">req</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>;
 
             <span class="kw">match</span> <span class="ident">kind</span> {
                 <span class="ident">RequestKind</span>::<span class="ident">Init</span> { <span class="ident">arg</span>: <span class="ident">init_in</span> } <span class="op">=</span><span class="op">&gt;</span> {
@@ -1550,36 +1550,29 @@
         <span class="self">self</span>.<span class="ident">bufsize</span>
     }
 
-    <span class="doccomment">/// Receive an request from the kernel.</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">receive</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">reader</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">R</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Request</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">R</span>: <span class="ident">AsyncRead</span> <span class="op">+</span> <span class="ident">Unpin</span>,
-    {
-        <span class="kw">loop</span> {
-            <span class="kw">let</span> <span class="ident">req</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">receive_msg</span>(<span class="ident">reader</span>, <span class="self">self</span>.<span class="ident">bufsize</span>).<span class="kw">await</span><span class="question-mark">?</span> {
-                <span class="prelude-val">Some</span>(<span class="ident">req</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">req</span>,
-                <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
-            };
-            <span class="kw">match</span> <span class="ident">req</span>.<span class="ident">kind</span> {
-                <span class="ident">RequestKind</span>::<span class="ident">Interrupt</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;Receive INTERRUPT (unique = {:?})&quot;</span>, <span class="ident">arg</span>.<span class="ident">unique</span>);
-                    <span class="self">self</span>.<span class="ident">send_interrupt</span>(<span class="ident">arg</span>.<span class="ident">unique</span>).<span class="kw">await</span>;
-                    <span class="kw">continue</span>;
-                }
-                <span class="ident">RequestKind</span>::<span class="ident">NotifyReply</span> { <span class="ident">arg</span>, <span class="ident">data</span> } <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="kw">let</span> <span class="ident">unique</span> <span class="op">=</span> <span class="ident">req</span>.<span class="ident">header</span>.<span class="ident">unique</span>;
-                    <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;Receive NOTIFY_REPLY (notify_unique = {:?})&quot;</span>, <span class="ident">unique</span>);
-                    <span class="self">self</span>.<span class="ident">send_notify_reply</span>(<span class="ident">unique</span>, <span class="ident">arg</span>.<span class="ident">offset</span>, <span class="ident">data</span>).<span class="kw">await</span>;
-                    <span class="kw">continue</span>;
-                }
-                <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="comment">// check if the request is already interrupted by the kernel.</span>
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">interrupt_state</span>.<span class="ident">lock</span>().<span class="kw">await</span>;
-                    <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">interrupted</span>.<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">req</span>.<span class="ident">header</span>.<span class="ident">unique</span>) {
-                        <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;The request was interrupted (unique={})&quot;</span>, <span class="ident">req</span>.<span class="ident">header</span>.<span class="ident">unique</span>);
-                        <span class="kw">continue</span>;
-                    }
-                    <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">req</span>));
+    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">handle_incoming_request</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">req</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Request</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span> {
+        <span class="kw">let</span> (<span class="ident">header</span>, <span class="ident">kind</span>, <span class="ident">data</span>) <span class="op">=</span> <span class="ident">req</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>;
+        <span class="kw">match</span> <span class="ident">kind</span> {
+            <span class="ident">RequestKind</span>::<span class="ident">Interrupt</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;Receive INTERRUPT (unique = {:?})&quot;</span>, <span class="ident">arg</span>.<span class="ident">unique</span>);
+                <span class="self">self</span>.<span class="ident">send_interrupt</span>(<span class="ident">arg</span>.<span class="ident">unique</span>).<span class="kw">await</span>;
+                <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
+            }
+            <span class="ident">RequestKind</span>::<span class="ident">NotifyReply</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">let</span> <span class="ident">unique</span> <span class="op">=</span> <span class="ident">header</span>.<span class="ident">unique</span>;
+                <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">data</span>.<span class="ident">expect</span>(<span class="string">&quot;empty data&quot;</span>);
+                <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;Receive NOTIFY_REPLY (notify_unique = {:?})&quot;</span>, <span class="ident">unique</span>);
+                <span class="self">self</span>.<span class="ident">send_notify_reply</span>(<span class="ident">unique</span>, <span class="ident">arg</span>.<span class="ident">offset</span>, <span class="ident">data</span>).<span class="kw">await</span>;
+                <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
+            }
+            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="comment">// check if the request is already interrupted by the kernel.</span>
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">interrupt_state</span>.<span class="ident">lock</span>().<span class="kw">await</span>;
+                <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">interrupted</span>.<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">header</span>.<span class="ident">unique</span>) {
+                    <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;The request was interrupted (unique={})&quot;</span>, <span class="ident">header</span>.<span class="ident">unique</span>);
+                    <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
+                } <span class="kw">else</span> {
+                    <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
                 }
             }
         }
@@ -1590,7 +1583,7 @@
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">process</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="question-mark">?</span><span class="ident">Sized</span>, <span class="ident">W</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">fs</span>: <span class="kw-2">&amp;</span><span class="ident">F</span>,
-        <span class="ident">req</span>: <span class="kw-2">&amp;</span><span class="ident">Request</span>,
+        <span class="ident">req</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Request</span>,
         <span class="ident">writer</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
     <span class="kw">where</span>
@@ -1606,10 +1599,11 @@
 
         <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(
             <span class="string">&quot;Handle a request: unique={}, opcode={:?}&quot;</span>,
-            <span class="ident">req</span>.<span class="ident">header</span>.<span class="ident">unique</span>,
+            <span class="ident">req</span>.<span class="ident">unique</span>(),
             <span class="ident">req</span>.<span class="ident">opcode</span>(),
         );
-        <span class="kw">let</span> <span class="ident">Request</span> { <span class="ident">header</span>, <span class="ident">kind</span>, .. } <span class="op">=</span> <span class="ident">req</span>;
+
+        <span class="kw">let</span> (<span class="ident">header</span>, <span class="ident">kind</span>, <span class="ident">data</span>) <span class="op">=</span> <span class="ident">req</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">ino</span> <span class="op">=</span> <span class="ident">header</span>.<span class="ident">nodeid</span>;
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cx</span> <span class="op">=</span> <span class="ident">Context</span> {
@@ -1778,8 +1772,10 @@
                     <span class="ident">reply</span>: <span class="ident">ReplyData</span>::<span class="ident">new</span>(<span class="ident">arg</span>.<span class="ident">size</span>),
                 });
             }
-            <span class="ident">RequestKind</span>::<span class="ident">Write</span> { <span class="ident">arg</span>, <span class="ident">data</span> } <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="ident">RequestKind</span>::<span class="ident">Write</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">data</span>.<span class="ident">expect</span>(<span class="string">&quot;empty data&quot;</span>);
                 <span class="macro">debug_assert_eq</span><span class="macro">!</span>(<span class="ident">data</span>.<span class="ident">len</span>(), <span class="ident">arg</span>.<span class="ident">size</span> <span class="kw">as</span> <span class="ident">usize</span>);
+
                 <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Write</span> {
                     <span class="ident">ino</span>,
                     <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
@@ -1877,7 +1873,7 @@
                     <span class="ident">ino</span>,
                     <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
                     <span class="ident">offset</span>: <span class="ident">arg</span>.<span class="ident">offset</span>,
-                    <span class="ident">plus</span>: <span class="kw-2">*</span><span class="ident">plus</span>,
+                    <span class="ident">plus</span>,
                     <span class="ident">reply</span>: <span class="ident">ReplyData</span>::<span class="ident">new</span>(<span class="ident">arg</span>.<span class="ident">size</span>),
                 });
             }
@@ -1934,7 +1930,7 @@
                         <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
                         <span class="ident">owner</span>: <span class="ident">arg</span>.<span class="ident">owner</span>,
                         <span class="ident">lk</span>: <span class="ident">FileLock</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="ident">arg</span>.<span class="ident">lk</span>),
-                        <span class="ident">sleep</span>: <span class="kw-2">*</span><span class="ident">sleep</span>,
+                        <span class="ident">sleep</span>,
                         <span class="ident">reply</span>: <span class="ident">ReplyEmpty</span>::<span class="ident">new</span>(),
                     });
                 }
