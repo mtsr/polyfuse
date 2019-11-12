@@ -1296,14 +1296,6 @@
 <span id="1296">1296</span>
 <span id="1297">1297</span>
 <span id="1298">1298</span>
-<span id="1299">1299</span>
-<span id="1300">1300</span>
-<span id="1301">1301</span>
-<span id="1302">1302</span>
-<span id="1303">1303</span>
-<span id="1304">1304</span>
-<span id="1305">1305</span>
-<span id="1306">1306</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Lowlevel interface to handle FUSE requests.</span>
 
@@ -1312,16 +1304,28 @@
 <span class="comment">// FIXME: re-enable lints.</span>
 <span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">cast_lossless</span>, <span class="ident">clippy</span>::<span class="ident">cast_possible_truncation</span>, <span class="ident">clippy</span>::<span class="ident">cast_sign_loss</span>)]</span>
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">reply</span>;
-
-<span class="kw">mod</span> <span class="ident">dirent</span>;
-<span class="kw">mod</span> <span class="ident">fs</span>;
-<span class="kw">mod</span> <span class="ident">request</span>;
-
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">dirent</span>::{<span class="ident">DirEntry</span>, <span class="ident">DirEntryType</span>};
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">fs</span>::{<span class="ident">FileAttr</span>, <span class="ident">FileLock</span>, <span class="ident">Filesystem</span>, <span class="ident">Forget</span>, <span class="ident">FsStatistics</span>, <span class="ident">Operation</span>};
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">request</span>::{<span class="ident">Request</span>, <span class="ident">RequestData</span>};
-
+<span class="kw">use</span> <span class="kw">crate</span>::{
+    <span class="ident">fs</span>::{<span class="ident">FileLock</span>, <span class="ident">Filesystem</span>, <span class="ident">Forget</span>, <span class="ident">Operation</span>},
+    <span class="ident">reply</span>::{
+        <span class="ident">send_msg</span>, <span class="comment">//</span>
+        <span class="ident">Payload</span>,
+        <span class="ident">ReplyAttr</span>,
+        <span class="ident">ReplyBmap</span>,
+        <span class="ident">ReplyCreate</span>,
+        <span class="ident">ReplyData</span>,
+        <span class="ident">ReplyEmpty</span>,
+        <span class="ident">ReplyEntry</span>,
+        <span class="ident">ReplyLk</span>,
+        <span class="ident">ReplyOpen</span>,
+        <span class="ident">ReplyOpendir</span>,
+        <span class="ident">ReplyPoll</span>,
+        <span class="ident">ReplyReadlink</span>,
+        <span class="ident">ReplyStatfs</span>,
+        <span class="ident">ReplyWrite</span>,
+        <span class="ident">ReplyXattr</span>,
+    },
+    <span class="ident">request</span>::{<span class="ident">Request</span>, <span class="ident">RequestData</span>, <span class="ident">RequestKind</span>},
+};
 <span class="kw">use</span> <span class="ident">bitflags</span>::<span class="ident">bitflags</span>;
 <span class="kw">use</span> <span class="ident">futures</span>::{
     <span class="ident">channel</span>::<span class="ident">oneshot</span>,
@@ -1361,26 +1365,6 @@
     <span class="ident">sync</span>::<span class="ident">atomic</span>::{<span class="ident">AtomicBool</span>, <span class="ident">AtomicU64</span>, <span class="ident">Ordering</span>},
     <span class="ident">task</span>::{<span class="self">self</span>, <span class="ident">Poll</span>},
 };
-
-<span class="kw">use</span> <span class="ident">reply</span>::{
-    <span class="ident">send_msg</span>, <span class="comment">//</span>
-    <span class="ident">Payload</span>,
-    <span class="ident">ReplyAttr</span>,
-    <span class="ident">ReplyBmap</span>,
-    <span class="ident">ReplyCreate</span>,
-    <span class="ident">ReplyData</span>,
-    <span class="ident">ReplyEmpty</span>,
-    <span class="ident">ReplyEntry</span>,
-    <span class="ident">ReplyLk</span>,
-    <span class="ident">ReplyOpen</span>,
-    <span class="ident">ReplyOpendir</span>,
-    <span class="ident">ReplyPoll</span>,
-    <span class="ident">ReplyReadlink</span>,
-    <span class="ident">ReplyStatfs</span>,
-    <span class="ident">ReplyWrite</span>,
-    <span class="ident">ReplyXattr</span>,
-};
-<span class="kw">use</span> <span class="ident">request</span>::<span class="ident">RequestKind</span>;
 
 <span class="comment">// The minimum supported ABI minor version by polyfuse.</span>
 <span class="kw">const</span> <span class="ident">MINIMUM_SUPPORTED_MINOR_VERSION</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="number">23</span>;

@@ -24,6 +24,10 @@
 <span id="24">24</span>
 <span id="25">25</span>
 <span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! FUSE (Filesystem in userspace) framework for Rust.</span>
 
@@ -39,17 +43,21 @@
     <span class="ident">clippy</span>::<span class="ident">unimplemented</span>
 )]</span>
 
-<span class="kw">mod</span> <span class="ident">lock</span>;
-<span class="kw">mod</span> <span class="ident">server</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">reply</span>;
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">channel</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">session</span>;
+<span class="kw">mod</span> <span class="ident">dirent</span>;
+<span class="kw">mod</span> <span class="ident">fs</span>;
+<span class="kw">mod</span> <span class="ident">request</span>;
+<span class="kw">mod</span> <span class="ident">session</span>;
 
-<span class="comment">// re-exports from sub modules.</span>
-<span class="attribute">#[<span class="ident">doc</span>(<span class="ident">inline</span>)]</span>
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">server</span>::{<span class="ident">Notifier</span>, <span class="ident">Server</span>},
-    <span class="ident">session</span>::{<span class="ident">Context</span>, <span class="ident">Filesystem</span>, <span class="ident">Operation</span>},
+    <span class="ident">dirent</span>::{<span class="ident">DirEntry</span>, <span class="ident">DirEntryType</span>},
+    <span class="ident">fs</span>::{<span class="ident">FileAttr</span>, <span class="ident">FileLock</span>, <span class="ident">Filesystem</span>, <span class="ident">Forget</span>, <span class="ident">FsStatistics</span>, <span class="ident">Operation</span>},
+    <span class="ident">request</span>::{<span class="ident">Request</span>, <span class="ident">RequestData</span>},
+    <span class="ident">session</span>::{
+        <span class="ident">CapabilityFlags</span>, <span class="ident">ConnectionInfo</span>, <span class="ident">Context</span>, <span class="ident">Interrupt</span>, <span class="ident">NotifyRetrieve</span>, <span class="ident">Session</span>,
+        <span class="ident">SessionInitializer</span>,
+    },
 };
 </pre></div>
 </section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "polyfuse";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
