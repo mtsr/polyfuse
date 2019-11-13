@@ -44,16 +44,16 @@
 )]</span>
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">reply</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">request</span>;
 
 <span class="kw">mod</span> <span class="ident">dirent</span>;
 <span class="kw">mod</span> <span class="ident">fs</span>;
-<span class="kw">mod</span> <span class="ident">request</span>;
 <span class="kw">mod</span> <span class="ident">session</span>;
 
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::{
     <span class="ident">dirent</span>::{<span class="ident">DirEntry</span>, <span class="ident">DirEntryType</span>},
     <span class="ident">fs</span>::{<span class="ident">FileAttr</span>, <span class="ident">FileLock</span>, <span class="ident">Filesystem</span>, <span class="ident">Forget</span>, <span class="ident">FsStatistics</span>, <span class="ident">Operation</span>},
-    <span class="ident">request</span>::{<span class="ident">Request</span>, <span class="ident">RequestData</span>},
+    <span class="ident">request</span>::{<span class="ident">Buffer</span>, <span class="ident">BytesBuffer</span>},
     <span class="ident">session</span>::{
         <span class="ident">CapabilityFlags</span>, <span class="ident">ConnectionInfo</span>, <span class="ident">Context</span>, <span class="ident">Interrupt</span>, <span class="ident">NotifyRetrieve</span>, <span class="ident">Session</span>,
         <span class="ident">SessionInitializer</span>,

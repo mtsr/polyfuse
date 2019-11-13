@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["MountOptions",""],["Notifier","Notification sender to the kernel."],["Server","FUSE filesystem server."]]});
+initSidebarItems({"struct":[["MountOptions",""],["Notifier","Notification sender to the kernel."],["NotifyHandle",""],["Server","FUSE filesystem server."]]});
