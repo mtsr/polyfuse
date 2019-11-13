@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["MountOptions",""],["Notifier","Notification sender to the kernel."],["NotifyHandle",""],["Server","FUSE filesystem server."]]});
+initSidebarItems({"fn":[["run","Run a FUSE filesystem daemon mounted onto the specified path."]],"struct":[["Channel","Asynchronous I/O object that communicates with the FUSE kernel driver."],["MountOptions",""],["Notifier","Notification sender to the kernel."],["RetrieveHandle","A handle for awaiting the result of a `retrieve` notification."],["Server","FUSE filesystem server."]]});
