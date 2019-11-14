@@ -35,6 +35,7 @@
 <span id="35">35</span>
 <span id="36">36</span>
 <span id="37">37</span>
+<span id="38">38</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Components for using `polyfuse` filesystem with Tokio runtime.</span>
 
@@ -61,13 +62,14 @@
     <span class="ident">server</span>::{<span class="ident">Notifier</span>, <span class="ident">RetrieveHandle</span>, <span class="ident">Server</span>},
 };
 
-<span class="kw">use</span> <span class="ident">polyfuse</span>::{<span class="ident">request</span>::<span class="ident">BytesBuffer</span>, <span class="ident">Filesystem</span>};
+<span class="kw">use</span> <span class="ident">bytes</span>::<span class="ident">Bytes</span>;
+<span class="kw">use</span> <span class="ident">polyfuse</span>::<span class="ident">Filesystem</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">io</span>, <span class="ident">path</span>::<span class="ident">Path</span>};
 
 <span class="doccomment">/// Run a FUSE filesystem daemon mounted onto the specified path.</span>
 <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">fs</span>: <span class="ident">F</span>, <span class="ident">mountpoint</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">BytesBuffer</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+    <span class="ident">F</span>: <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">Bytes</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
 {
     <span class="kw">let</span> <span class="ident">server</span> <span class="op">=</span> <span class="ident">Server</span>::<span class="ident">mount</span>(<span class="ident">mountpoint</span>, <span class="ident">Default</span>::<span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="ident">server</span>.<span class="ident">run</span>(<span class="ident">fs</span>).<span class="kw">await</span><span class="question-mark">?</span>;

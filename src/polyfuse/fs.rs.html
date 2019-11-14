@@ -505,21 +505,6 @@
 <span id="505">505</span>
 <span id="506">506</span>
 <span id="507">507</span>
-<span id="508">508</span>
-<span id="509">509</span>
-<span id="510">510</span>
-<span id="511">511</span>
-<span id="512">512</span>
-<span id="513">513</span>
-<span id="514">514</span>
-<span id="515">515</span>
-<span id="516">516</span>
-<span id="517">517</span>
-<span id="518">518</span>
-<span id="519">519</span>
-<span id="520">520</span>
-<span id="521">521</span>
-<span id="522">522</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Filesystem abstraction.</span>
 
@@ -542,7 +527,7 @@
         <span class="ident">ReplyWrite</span>,
         <span class="ident">ReplyXattr</span>,
     },
-    <span class="ident">request</span>::{<span class="ident">Buffer</span>, <span class="ident">RequestHeader</span>},
+    <span class="ident">request</span>::<span class="ident">RequestHeader</span>,
     <span class="ident">session</span>::{<span class="ident">Interrupt</span>, <span class="ident">Session</span>},
 };
 <span class="kw">use</span> <span class="ident">async_trait</span>::<span class="ident">async_trait</span>;
@@ -550,32 +535,23 @@
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">ffi</span>::<span class="ident">OsStr</span>, <span class="ident">fmt</span>, <span class="ident">future</span>::<span class="ident">Future</span>, <span class="ident">io</span>, <span class="ident">pin</span>::<span class="ident">Pin</span>};
 
 <span class="doccomment">/// Contextural information about an incoming request.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Buffer</span>,
-{
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="ident">header</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">RequestHeader</span>,
     <span class="ident">writer</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> (<span class="kw">dyn</span> <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Unpin</span>)<span class="op">&gt;</span>,
-    <span class="ident">session</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Session</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
+    <span class="ident">session</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Session</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> <span class="ident">fmt</span>::<span class="ident">Debug</span> <span class="kw">for</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">T</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Buffer</span>,
-{
+<span class="kw">impl</span> <span class="ident">fmt</span>::<span class="ident">Debug</span> <span class="kw">for</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
     <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt</span>::<span class="ident">Formatter</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">fmt</span>::<span class="prelude-ty">Result</span> {
         <span class="ident">f</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;Context&quot;</span>).<span class="ident">finish</span>()
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Buffer</span>,
-{
+<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(
         <span class="ident">header</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">RequestHeader</span>,
         <span class="ident">writer</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> (<span class="kw">impl</span> <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Unpin</span>),
-        <span class="ident">session</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Session</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
+        <span class="ident">session</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Session</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">header</span>,
@@ -633,81 +609,75 @@
 
 <span class="doccomment">/// The filesystem running on the user space.</span>
 <span class="attribute">#[<span class="ident">async_trait</span>]</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>: <span class="ident">Sync</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Buffer</span>,
-{
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>: <span class="ident">Sync</span> {
     <span class="doccomment">/// Handle a FUSE request from the kernel and reply with its result.</span>
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">call</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">op</span>: <span class="ident">Operation</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">T</span>::<span class="ident">Data</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
+    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">call</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>, <span class="ident">op</span>: <span class="ident">Operation</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">T</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">T</span>::<span class="ident">Data</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;async_trait</span>,
+        <span class="ident">T</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;async_trait</span>,
     {
         <span class="prelude-val">Ok</span>(())
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">F</span>: <span class="question-mark">?</span><span class="ident">Sized</span>, <span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">F</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">F</span>: <span class="question-mark">?</span><span class="ident">Sized</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">F</span>
 <span class="kw">where</span>
     <span class="ident">F</span>: <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-    <span class="ident">T</span>: <span class="ident">Buffer</span>,
 {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">call</span><span class="op">&lt;</span><span class="lifetime">&#39;l1</span>, <span class="lifetime">&#39;l2</span>, <span class="lifetime">&#39;l3</span>, <span class="lifetime">&#39;l4</span>, <span class="lifetime">&#39;async_trait</span><span class="op">&gt;</span>(
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;l1</span> <span class="self">self</span>,
-        <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;l2</span> <span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;l3</span>, <span class="ident">T</span><span class="op">&gt;</span>,
-        <span class="ident">op</span>: <span class="ident">Operation</span><span class="op">&lt;</span><span class="lifetime">&#39;l4</span>, <span class="ident">T</span>::<span class="ident">Data</span><span class="op">&gt;</span>,
+        <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;l2</span> <span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;l3</span><span class="op">&gt;</span>,
+        <span class="ident">op</span>: <span class="ident">Operation</span><span class="op">&lt;</span><span class="lifetime">&#39;l4</span>, <span class="ident">T</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;async_trait</span><span class="op">&gt;</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="lifetime">&#39;l1</span>: <span class="lifetime">&#39;async_trait</span>,
         <span class="lifetime">&#39;l2</span>: <span class="lifetime">&#39;async_trait</span>,
         <span class="lifetime">&#39;l3</span>: <span class="lifetime">&#39;async_trait</span>,
         <span class="lifetime">&#39;l4</span>: <span class="lifetime">&#39;async_trait</span>,
-        <span class="ident">T</span>::<span class="ident">Data</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;async_trait</span>,
+        <span class="ident">T</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;async_trait</span>,
     {
         (<span class="kw-2">*</span><span class="kw-2">*</span><span class="self">self</span>).<span class="ident">call</span>(<span class="ident">cx</span>, <span class="ident">op</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="question-mark">?</span><span class="ident">Sized</span>, <span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="question-mark">?</span><span class="ident">Sized</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">F</span>: <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-    <span class="ident">T</span>: <span class="ident">Buffer</span>,
 {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">call</span><span class="op">&lt;</span><span class="lifetime">&#39;l1</span>, <span class="lifetime">&#39;l2</span>, <span class="lifetime">&#39;l3</span>, <span class="lifetime">&#39;l4</span>, <span class="lifetime">&#39;async_trait</span><span class="op">&gt;</span>(
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;l1</span> <span class="self">self</span>,
-        <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;l2</span> <span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;l3</span>, <span class="ident">T</span><span class="op">&gt;</span>,
-        <span class="ident">op</span>: <span class="ident">Operation</span><span class="op">&lt;</span><span class="lifetime">&#39;l4</span>, <span class="ident">T</span>::<span class="ident">Data</span><span class="op">&gt;</span>,
+        <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;l2</span> <span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;l3</span><span class="op">&gt;</span>,
+        <span class="ident">op</span>: <span class="ident">Operation</span><span class="op">&lt;</span><span class="lifetime">&#39;l4</span>, <span class="ident">T</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;async_trait</span><span class="op">&gt;</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="lifetime">&#39;l1</span>: <span class="lifetime">&#39;async_trait</span>,
         <span class="lifetime">&#39;l2</span>: <span class="lifetime">&#39;async_trait</span>,
         <span class="lifetime">&#39;l3</span>: <span class="lifetime">&#39;async_trait</span>,
         <span class="lifetime">&#39;l4</span>: <span class="lifetime">&#39;async_trait</span>,
-        <span class="ident">T</span>::<span class="ident">Data</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;async_trait</span>,
+        <span class="ident">T</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;async_trait</span>,
     {
         (<span class="kw-2">*</span><span class="kw-2">*</span><span class="self">self</span>).<span class="ident">call</span>(<span class="ident">cx</span>, <span class="ident">op</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="question-mark">?</span><span class="ident">Sized</span>, <span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">std</span>::<span class="ident">sync</span>::<span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="question-mark">?</span><span class="ident">Sized</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">std</span>::<span class="ident">sync</span>::<span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">F</span>: <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span>,
-    <span class="ident">T</span>: <span class="ident">Buffer</span>,
 {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">call</span><span class="op">&lt;</span><span class="lifetime">&#39;l1</span>, <span class="lifetime">&#39;l2</span>, <span class="lifetime">&#39;l3</span>, <span class="lifetime">&#39;l4</span>, <span class="lifetime">&#39;async_trait</span><span class="op">&gt;</span>(
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;l1</span> <span class="self">self</span>,
-        <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;l2</span> <span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;l3</span>, <span class="ident">T</span><span class="op">&gt;</span>,
-        <span class="ident">op</span>: <span class="ident">Operation</span><span class="op">&lt;</span><span class="lifetime">&#39;l4</span>, <span class="ident">T</span>::<span class="ident">Data</span><span class="op">&gt;</span>,
+        <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;l2</span> <span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;l3</span><span class="op">&gt;</span>,
+        <span class="ident">op</span>: <span class="ident">Operation</span><span class="op">&lt;</span><span class="lifetime">&#39;l4</span>, <span class="ident">T</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;async_trait</span><span class="op">&gt;</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="lifetime">&#39;l1</span>: <span class="lifetime">&#39;async_trait</span>,
         <span class="lifetime">&#39;l2</span>: <span class="lifetime">&#39;async_trait</span>,
         <span class="lifetime">&#39;l3</span>: <span class="lifetime">&#39;async_trait</span>,
         <span class="lifetime">&#39;l4</span>: <span class="lifetime">&#39;async_trait</span>,
-        <span class="ident">T</span>::<span class="ident">Data</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;async_trait</span>,
+        <span class="ident">T</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;async_trait</span>,
     {
         (<span class="kw-2">*</span><span class="kw-2">*</span><span class="self">self</span>).<span class="ident">call</span>(<span class="ident">cx</span>, <span class="ident">op</span>)
     }

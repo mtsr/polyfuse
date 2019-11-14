@@ -388,7 +388,6 @@
 <span id="388">388</span>
 <span id="389">389</span>
 <span id="390">390</span>
-<span id="391">391</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="comment">// FIXME: re-enable lints.</span>
 <span class="attribute">#![<span class="ident">allow</span>(
@@ -521,9 +520,8 @@
     <span class="doccomment">/// This function receives an INIT request from the kernel and replies</span>
     <span class="doccomment">/// after initializing the connection parameters.</span>
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">cognitive_complexity</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">init</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">I</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">io</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">I</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Session</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">init</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">io</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">I</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Session</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">Buffer</span>,
         <span class="ident">I</span>: <span class="ident">AsyncRead</span> <span class="op">+</span> <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
     {
         <span class="kw">let</span> <span class="ident">init_buf_size</span> <span class="op">=</span> <span class="ident">BUFFER_HEADER_SIZE</span> <span class="op">+</span> <span class="kw-2">*</span><span class="ident">PAGE_SIZE</span> <span class="op">*</span> <span class="ident">MAX_MAX_PAGES</span>;
