@@ -622,6 +622,10 @@
 <span id="622">622</span>
 <span id="623">623</span>
 <span id="624">624</span>
+<span id="625">625</span>
+<span id="626">626</span>
+<span id="627">627</span>
+<span id="628">628</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Lowlevel interface to handle FUSE requests.</span>
 
@@ -1058,14 +1062,18 @@
                     <span class="ident">reply</span>: <span class="ident">ReplyOpendir</span>::<span class="ident">new</span>(),
                 });
             }
-            <span class="ident">RequestKind</span>::<span class="ident">Readdir</span> { <span class="ident">arg</span>, <span class="ident">plus</span> } <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="ident">RequestKind</span>::<span class="ident">Readdir</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Readdir</span> {
                     <span class="ident">ino</span>,
                     <span class="ident">fh</span>: <span class="ident">arg</span>.<span class="ident">fh</span>,
                     <span class="ident">offset</span>: <span class="ident">arg</span>.<span class="ident">offset</span>,
-                    <span class="ident">plus</span>,
                     <span class="ident">reply</span>: <span class="ident">ReplyData</span>::<span class="ident">new</span>(<span class="ident">arg</span>.<span class="ident">size</span>),
                 });
+            }
+            <span class="ident">RequestKind</span>::<span class="ident">Readdirplus</span> { .. } <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="comment">// FIXME: support readdirplus</span>
+                <span class="ident">tracing</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;FUSE_READDIRPLUS is not currently disabled&quot;</span>);
+                <span class="ident">cx</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">ENOSYS</span>).<span class="kw">await</span><span class="question-mark">?</span>;
             }
             <span class="ident">RequestKind</span>::<span class="ident">Releasedir</span> { <span class="ident">arg</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="macro">run_op</span><span class="macro">!</span>(<span class="ident">Operation</span>::<span class="ident">Releasedir</span> {

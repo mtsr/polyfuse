@@ -727,6 +727,8 @@
 <span id="727">727</span>
 <span id="728">728</span>
 <span id="729">729</span>
+<span id="730">730</span>
+<span id="731">731</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Receives and parses FUSE requests.</span>
 
@@ -1170,7 +1172,9 @@
     },
     <span class="ident">Readdir</span> {
         <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">fuse_read_in</span>,
-        <span class="ident">plus</span>: <span class="ident">bool</span>,
+    },
+    <span class="ident">Readdirplus</span> {
+        <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">fuse_read_in</span>,
     },
     <span class="ident">Releasedir</span> {
         <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">fuse_release_in</span>,
@@ -1382,7 +1386,7 @@
             }
             <span class="ident">fuse_opcode</span>::<span class="ident">FUSE_READDIR</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">RequestKind</span>::<span class="ident">Readdir</span> { <span class="ident">arg</span>, <span class="ident">plus</span>: <span class="bool-val">false</span> })
+                <span class="prelude-val">Ok</span>(<span class="ident">RequestKind</span>::<span class="ident">Readdir</span> { <span class="ident">arg</span> })
             }
             <span class="ident">fuse_opcode</span>::<span class="ident">FUSE_RELEASEDIR</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
@@ -1427,7 +1431,7 @@
             }
             <span class="ident">fuse_opcode</span>::<span class="ident">FUSE_READDIRPLUS</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">RequestKind</span>::<span class="ident">Readdir</span> { <span class="ident">arg</span>, <span class="ident">plus</span>: <span class="bool-val">true</span> })
+                <span class="prelude-val">Ok</span>(<span class="ident">RequestKind</span>::<span class="ident">Readdirplus</span> { <span class="ident">arg</span> })
             }
             <span class="ident">fuse_opcode</span>::<span class="ident">FUSE_RENAME2</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">arg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fetch</span>()<span class="question-mark">?</span>;
