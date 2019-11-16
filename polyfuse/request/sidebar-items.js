@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["RequestKind","The kind of FUSE request."]],"struct":[["BytesBuffer","A `Buffer` that stores a FUSE request in memory."],["Parser","A parser for FUSE request."],["Request","A FUSE request."],["RequestHeader","The header part of a FUSE request."]],"trait":[["Buffer","Buffer that stores FUSE requests."]]});
+initSidebarItems({"struct":[["BytesBuffer","A `Buffer` that stores a FUSE request in memory."],["Request","A FUSE request."],["RequestHeader","The header part of a FUSE request."]],"trait":[["Buffer","Buffer that stores FUSE requests."]]});

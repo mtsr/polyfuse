@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Notifier",""],["RetrieveHandle","A handle for awaiting a result of `notify_retrieve`."]]});
+initSidebarItems({"struct":[["Notifier","Notification sender."],["RetrieveHandle","A handle for awaiting a result of `notify_retrieve`."]]});

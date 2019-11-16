@@ -34,6 +34,7 @@
 <span id="34">34</span>
 <span id="35">35</span>
 <span id="36">36</span>
+<span id="37">37</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="attribute">#![<span class="ident">doc</span>(<span class="ident">html_root_url</span> <span class="op">=</span> <span class="string">&quot;https://docs.rs/polyfuse/0.1.0&quot;</span>)]</span>
 
@@ -41,15 +42,16 @@
 
 <span class="attribute">#![<span class="ident">warn</span>(<span class="ident">clippy</span>::<span class="ident">checked_conversions</span>)]</span>
 <span class="attribute">#![<span class="ident">deny</span>(
+    <span class="ident">missing_docs</span>,
     <span class="ident">missing_debug_implementations</span>,
     <span class="ident">clippy</span>::<span class="ident">cast_lossless</span>,
     <span class="ident">clippy</span>::<span class="ident">cast_possible_truncation</span>,
     <span class="ident">clippy</span>::<span class="ident">cast_possible_wrap</span>,
     <span class="ident">clippy</span>::<span class="ident">cast_precision_loss</span>,
     <span class="ident">clippy</span>::<span class="ident">cast_sign_loss</span>,
-    <span class="ident">clippy</span>::<span class="ident">invalid_upcast_comparisons</span>,
-    <span class="ident">clippy</span>::<span class="ident">unimplemented</span>
+    <span class="ident">clippy</span>::<span class="ident">invalid_upcast_comparisons</span>
 )]</span>
+<span class="attribute">#![<span class="ident">forbid</span>(<span class="ident">clippy</span>::<span class="ident">unimplemented</span>)]</span>
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">notify</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">reply</span>;
