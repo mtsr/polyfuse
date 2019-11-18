@@ -173,15 +173,15 @@
                 <span class="ident">Poll</span>::<span class="ident">Pending</span>
             }
             <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;write error: {}&quot;</span>, <span class="ident">e</span>);
+                <span class="ident">tracing</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;write error: {}&quot;</span>, <span class="ident">e</span>);
                 <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>))
             }
         }
     }
 
     <span class="doccomment">/// Attempt to create a clone of this channel.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ioc_clone</span>: <span class="ident">bool</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">conn</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">get_ref</span>().<span class="ident">try_clone</span>(<span class="ident">ioc_clone</span>)<span class="question-mark">?</span>;
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
+        <span class="kw">let</span> <span class="ident">conn</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">get_ref</span>().<span class="ident">try_clone</span>()<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="self">Self</span>(<span class="ident">PollEvented</span>::<span class="ident">new</span>(<span class="ident">conn</span>)<span class="question-mark">?</span>))
     }
 }

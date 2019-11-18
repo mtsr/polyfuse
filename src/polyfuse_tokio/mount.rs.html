@@ -277,18 +277,6 @@
 <span id="277">277</span>
 <span id="278">278</span>
 <span id="279">279</span>
-<span id="280">280</span>
-<span id="281">281</span>
-<span id="282">282</span>
-<span id="283">283</span>
-<span id="284">284</span>
-<span id="285">285</span>
-<span id="286">286</span>
-<span id="287">287</span>
-<span id="288">288</span>
-<span id="289">289</span>
-<span id="290">290</span>
-<span id="291">291</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="attribute">#![<span class="ident">allow</span>(
     <span class="ident">clippy</span>::<span class="ident">cast_possible_wrap</span>,
@@ -298,10 +286,9 @@
 
 <span class="kw">use</span> <span class="ident">libc</span>::{<span class="ident">c_int</span>, <span class="ident">c_void</span>, <span class="ident">iovec</span>, <span class="ident">ssize_t</span>};
 <span class="kw">use</span> <span class="ident">mio</span>::{<span class="ident">unix</span>::<span class="ident">EventedFd</span>, <span class="ident">Evented</span>, <span class="ident">PollOpt</span>, <span class="ident">Ready</span>, <span class="ident">Token</span>};
-<span class="kw">use</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_DEV_IOC_CLONE</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{
     <span class="ident">cmp</span>,
-    <span class="ident">ffi</span>::{<span class="ident">CStr</span>, <span class="ident">OsStr</span>, <span class="ident">OsString</span>},
+    <span class="ident">ffi</span>::{<span class="ident">OsStr</span>, <span class="ident">OsString</span>},
     <span class="ident">io</span>::{<span class="self">self</span>, <span class="ident">IoSlice</span>, <span class="ident">IoSliceMut</span>, <span class="ident">Read</span>, <span class="ident">Write</span>},
     <span class="ident">mem</span>::{<span class="self">self</span>, <span class="ident">MaybeUninit</span>},
     <span class="ident">os</span>::<span class="ident">unix</span>::{
@@ -342,6 +329,9 @@
 <span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Connection</span> {
     <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
         <span class="kw">let</span> <span class="ident">_e</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">unmount</span>();
+        <span class="kw">unsafe</span> {
+            <span class="ident">libc</span>::<span class="ident">close</span>(<span class="self">self</span>.<span class="ident">fd</span>);
+        }
     }
 }
 
@@ -364,22 +354,8 @@
     }
 
     <span class="doccomment">/// Attempt to get a clone of this connection.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ioc_clone</span>: <span class="ident">bool</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">clonefd</span>;
-        <span class="kw">unsafe</span> {
-            <span class="kw">if</span> <span class="ident">ioc_clone</span> {
-                <span class="kw">let</span> <span class="ident">devname</span> <span class="op">=</span> <span class="ident">CStr</span>::<span class="ident">from_bytes_with_nul_unchecked</span>(<span class="string">b&quot;/dev/fuse\0&quot;</span>);
-
-                <span class="ident">clonefd</span> <span class="op">=</span> <span class="ident">cvt</span>(<span class="ident">libc</span>::<span class="ident">open</span>(<span class="ident">devname</span>.<span class="ident">as_ptr</span>(), <span class="ident">libc</span>::<span class="ident">O_RDWR</span> <span class="op">|</span> <span class="ident">libc</span>::<span class="ident">O_CLOEXEC</span>))<span class="question-mark">?</span>;
-
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">err</span>) <span class="op">=</span> <span class="ident">cvt</span>(<span class="ident">libc</span>::<span class="ident">ioctl</span>(<span class="ident">clonefd</span>, <span class="ident">FUSE_DEV_IOC_CLONE</span>.<span class="ident">into</span>(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">fd</span>)) {
-                    <span class="ident">libc</span>::<span class="ident">close</span>(<span class="ident">clonefd</span>);
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">err</span>);
-                }
-            } <span class="kw">else</span> {
-                <span class="ident">clonefd</span> <span class="op">=</span> <span class="ident">cvt</span>(<span class="ident">libc</span>::<span class="ident">dup</span>(<span class="self">self</span>.<span class="ident">fd</span>))<span class="question-mark">?</span>;
-            }
-        }
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
+        <span class="kw">let</span> <span class="ident">clonefd</span> <span class="op">=</span> <span class="ident">cvt</span>(<span class="kw">unsafe</span> { <span class="ident">libc</span>::<span class="ident">dup</span>(<span class="self">self</span>.<span class="ident">fd</span>) })<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(<span class="self">Self</span> {
             <span class="ident">fd</span>: <span class="ident">clonefd</span>,
