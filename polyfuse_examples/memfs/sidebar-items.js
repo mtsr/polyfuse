@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["MemFs",""]]});
+initSidebarItems({"struct":[["MemFS","An in-memory filesystem."]]});
