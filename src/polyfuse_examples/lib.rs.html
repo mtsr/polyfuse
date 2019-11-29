@@ -33,7 +33,6 @@
 <span id="33">33</span>
 <span id="34">34</span>
 <span id="35">35</span>
-<span id="36">36</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">unnecessary_mut_passed</span>)]</span>
 <span class="attribute">#![<span class="ident">deny</span>(<span class="ident">clippy</span>::<span class="ident">unimplemented</span>)]</span>
@@ -42,12 +41,11 @@
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">prelude</span> {
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">anyhow</span>, <span class="ident">ensure</span>};
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">async_trait</span>::<span class="ident">async_trait</span>;
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">futures</span>::{
         <span class="ident">future</span>::{<span class="ident">Future</span>, <span class="ident">FutureExt</span>},
         <span class="ident">io</span>::<span class="ident">AsyncWrite</span>,
     };
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">polyfuse</span>::{<span class="ident">op</span>::<span class="ident">Operation</span>, <span class="ident">Context</span>, <span class="ident">Filesystem</span>};
+    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">polyfuse</span>::{<span class="ident">async_trait</span>, <span class="ident">op</span>::<span class="ident">Operation</span>, <span class="ident">Context</span>, <span class="ident">Filesystem</span>};
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">std</span>::{
         <span class="ident">ffi</span>::{<span class="ident">OsStr</span>, <span class="ident">OsString</span>},
         <span class="ident">os</span>::<span class="ident">unix</span>::<span class="ident">ffi</span>::<span class="ident">OsStrExt</span>,

@@ -171,12 +171,12 @@
 <span class="doccomment">//! Filesystem abstraction.</span>
 
 <span class="kw">use</span> <span class="kw">crate</span>::{
+    <span class="ident">async_trait</span>,
     <span class="ident">op</span>::<span class="ident">Operation</span>,
     <span class="ident">reply</span>::<span class="ident">send_msg</span>,
     <span class="ident">request</span>::<span class="ident">RequestHeader</span>,
     <span class="ident">session</span>::{<span class="ident">Interrupt</span>, <span class="ident">Session</span>},
 };
-<span class="kw">use</span> <span class="ident">async_trait</span>::<span class="ident">async_trait</span>;
 <span class="kw">use</span> <span class="ident">futures</span>::<span class="ident">io</span>::<span class="ident">AsyncWrite</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">fmt</span>, <span class="ident">future</span>::<span class="ident">Future</span>, <span class="ident">io</span>, <span class="ident">pin</span>::<span class="ident">Pin</span>};
 
