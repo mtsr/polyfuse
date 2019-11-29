@@ -400,6 +400,8 @@
 <span id="400">400</span>
 <span id="401">401</span>
 <span id="402">402</span>
+<span id="403">403</span>
+<span id="404">404</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="comment">// FIXME: re-enable lints.</span>
 <span class="attribute">#![<span class="ident">allow</span>(
@@ -778,9 +780,11 @@
         <span class="doccomment">/// The filesystem supports POSIX access control lists.</span>
         <span class="kw">const</span> <span class="ident">POSIX_ACL</span> <span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_POSIX_ACL</span>;
 
-        <span class="comment">// TODO: readdirplus</span>
-        <span class="comment">// const READDIRPLUS = polyfuse_sys::kernel::FUSE_DO_READDIRPLUS;</span>
-        <span class="comment">// const READDIRPLUS_AUTO = polyfuse_sys::kernel::FUSE_READDIRPLUS_AUTO;</span>
+        <span class="doccomment">/// The filesystem supports `readdirplus` operations.</span>
+        <span class="kw">const</span> <span class="ident">READDIRPLUS</span> <span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_DO_READDIRPLUS</span>;
+
+        <span class="doccomment">/// Indicates that the kernel uses the adaptive readdirplus.</span>
+        <span class="kw">const</span> <span class="ident">READDIRPLUS_AUTO</span> <span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_READDIRPLUS_AUTO</span>;
 
         <span class="comment">// TODO: splice read/write</span>
         <span class="comment">// const SPLICE_WRITE = polyfuse_sys::kernel::FUSE_SPLICE_WRITE;</span>

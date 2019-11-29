@@ -1519,6 +1519,17 @@
 <span id="1519">1519</span>
 <span id="1520">1520</span>
 <span id="1521">1521</span>
+<span id="1522">1522</span>
+<span id="1523">1523</span>
+<span id="1524">1524</span>
+<span id="1525">1525</span>
+<span id="1526">1526</span>
+<span id="1527">1527</span>
+<span id="1528">1528</span>
+<span id="1529">1529</span>
+<span id="1530">1530</span>
+<span id="1531">1531</span>
+<span id="1532">1532</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Filesystem operations.</span>
 
@@ -2600,10 +2611,17 @@
     }
 }
 
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>)]</span>
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ReaddirMode</span> {
+    <span class="ident">Normal</span>,
+    <span class="ident">Plus</span>,
+}
+
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Readdir</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">header</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">RequestHeader</span>,
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">arg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">fuse_read_in</span>,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">mode</span>: <span class="ident">ReaddirMode</span>,
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Readdir</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
@@ -2621,6 +2639,10 @@
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">size</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u32</span> {
         <span class="self">self</span>.<span class="ident">arg</span>.<span class="ident">size</span>
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">mode</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ReaddirMode</span> {
+        <span class="self">self</span>.<span class="ident">mode</span>
     }
 
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">reply</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>(
