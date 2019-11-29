@@ -314,6 +314,7 @@
 <span id="314">314</span>
 <span id="315">315</span>
 <span id="316">316</span>
+<span id="317">317</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">mod</span> <span class="ident">inode</span>;
 <span class="kw">mod</span> <span class="ident">table</span>;
@@ -322,7 +323,11 @@
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">table</span>::<span class="ident">INodeTable</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">polyfuse</span>::{<span class="ident">op</span>, <span class="ident">FileAttr</span>};
+<span class="kw">use</span> <span class="ident">polyfuse</span>::{
+    <span class="ident">op</span>,
+    <span class="ident">reply</span>::{<span class="ident">ReplyAttr</span>, <span class="ident">ReplyEntry</span>, <span class="ident">ReplyWrite</span>},
+    <span class="ident">FileAttr</span>,
+};
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">fs</span>::<span class="ident">Metadata</span>, <span class="ident">io</span>, <span class="ident">time</span>::<span class="ident">SystemTime</span>};
 
 <span class="doccomment">/// An in-memory filesystem.</span>
@@ -371,10 +376,10 @@
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">inodes</span>.<span class="ident">lookup</span>(<span class="ident">op</span>.<span class="ident">parent</span>(), <span class="ident">op</span>.<span class="ident">name</span>()).<span class="kw">await</span> {
             <span class="prelude-val">Some</span>(<span class="ident">inode</span>) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">attr</span> <span class="op">=</span> <span class="ident">inode</span>.<span class="ident">load_attr</span>();
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">op</span>.<span class="ident">reply</span>();
-                <span class="ident">reply</span>.<span class="ident">entry_valid</span>(<span class="self">self</span>.<span class="ident">entry_valid</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="ident">entry_valid</span>.<span class="number">1</span>);
-                <span class="ident">reply</span>.<span class="ident">attr_valid</span>(<span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">1</span>);
-                <span class="ident">reply</span>.<span class="ident">entry</span>(<span class="ident">cx</span>, <span class="ident">attr</span>, <span class="number">0</span>).<span class="kw">await</span>
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">entry</span> <span class="op">=</span> <span class="ident">ReplyEntry</span>::<span class="ident">new</span>(<span class="ident">attr</span>);
+                <span class="ident">entry</span>.<span class="ident">entry_valid</span>(<span class="self">self</span>.<span class="ident">entry_valid</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="ident">entry_valid</span>.<span class="number">1</span>);
+                <span class="ident">entry</span>.<span class="ident">attr_valid</span>(<span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">1</span>);
+                <span class="ident">op</span>.<span class="ident">reply</span>(<span class="ident">cx</span>, <span class="ident">entry</span>).<span class="kw">await</span>
             }
             <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">cx</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">ENOENT</span>).<span class="kw">await</span>,
         }
@@ -395,9 +400,9 @@
 
         <span class="kw">let</span> <span class="ident">attr</span> <span class="op">=</span> <span class="ident">inode</span>.<span class="ident">load_attr</span>();
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">op</span>.<span class="ident">reply</span>();
-        <span class="ident">reply</span>.<span class="ident">attr_valid</span>(<span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">1</span>);
-        <span class="ident">reply</span>.<span class="ident">attr</span>(<span class="ident">cx</span>, <span class="ident">attr</span>).<span class="kw">await</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">attr</span> <span class="op">=</span> <span class="ident">ReplyAttr</span>::<span class="ident">new</span>(<span class="ident">attr</span>);
+        <span class="ident">attr</span>.<span class="ident">attr_valid</span>(<span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">1</span>);
+        <span class="ident">op</span>.<span class="ident">reply</span>(<span class="ident">cx</span>, <span class="ident">attr</span>).<span class="kw">await</span>
     }
 
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">do_setattr</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>(
@@ -450,9 +455,9 @@
 
         <span class="ident">inode</span>.<span class="ident">store_attr</span>(<span class="ident">attr</span>);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">op</span>.<span class="ident">reply</span>();
-        <span class="ident">reply</span>.<span class="ident">attr_valid</span>(<span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">1</span>);
-        <span class="ident">reply</span>.<span class="ident">attr</span>(<span class="ident">cx</span>, <span class="ident">attr</span>).<span class="kw">await</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">attr</span> <span class="op">=</span> <span class="ident">ReplyAttr</span>::<span class="ident">new</span>(<span class="ident">attr</span>);
+        <span class="ident">attr</span>.<span class="ident">attr_valid</span>(<span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">1</span>);
+        <span class="ident">op</span>.<span class="ident">reply</span>(<span class="ident">cx</span>, <span class="ident">attr</span>).<span class="kw">await</span>
     }
 
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">do_read</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">W</span><span class="op">&gt;</span>, <span class="ident">op</span>: <span class="ident">op</span>::<span class="ident">Read</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
@@ -469,10 +474,9 @@
             <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">cx</span>.<span class="ident">reply_err</span>(<span class="ident">libc</span>::<span class="ident">EPERM</span>).<span class="kw">await</span>,
         };
 
-        <span class="kw">let</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">op</span>.<span class="ident">reply</span>();
         <span class="kw">match</span> <span class="ident">file</span>.<span class="ident">read</span>(<span class="ident">op</span>.<span class="ident">offset</span>() <span class="kw">as</span> <span class="ident">usize</span>, <span class="ident">op</span>.<span class="ident">size</span>() <span class="kw">as</span> <span class="ident">usize</span>).<span class="kw">await</span> {
-            <span class="prelude-val">Some</span>(<span class="ident">data</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">reply</span>.<span class="ident">data</span>(<span class="ident">cx</span>, <span class="kw-2">&amp;</span><span class="ident">data</span>).<span class="kw">await</span>,
-            <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">reply</span>.<span class="ident">data</span>(<span class="ident">cx</span>, <span class="kw-2">&amp;</span>[]).<span class="kw">await</span>,
+            <span class="prelude-val">Some</span>(<span class="ident">data</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">op</span>.<span class="ident">reply</span>(<span class="ident">cx</span>, <span class="kw-2">&amp;</span><span class="ident">data</span>).<span class="kw">await</span>,
+            <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">op</span>.<span class="ident">reply</span>(<span class="ident">cx</span>, <span class="kw-2">&amp;</span>[]).<span class="kw">await</span>,
         }
     }
 
@@ -505,8 +509,7 @@
         <span class="ident">attr</span>.<span class="ident">set_size</span>(<span class="ident">offset</span> <span class="op">+</span> <span class="ident">data</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u64</span>);
         <span class="ident">inode</span>.<span class="ident">store_attr</span>(<span class="ident">attr</span>);
 
-        <span class="kw">let</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">op</span>.<span class="ident">reply</span>();
-        <span class="ident">reply</span>.<span class="ident">write</span>(<span class="ident">cx</span>, <span class="ident">data</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u32</span>).<span class="kw">await</span>
+        <span class="ident">op</span>.<span class="ident">reply</span>(<span class="ident">cx</span>, <span class="ident">ReplyWrite</span>::<span class="ident">new</span>(<span class="ident">data</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u32</span>)).<span class="kw">await</span>
     }
 
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">do_readdir</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>(
@@ -541,8 +544,7 @@
             .<span class="ident">collect</span>();
         <span class="kw">let</span> <span class="ident">entries</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">entries</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">entry</span><span class="op">|</span> <span class="ident">entry</span>.<span class="ident">as_ref</span>()).<span class="ident">collect</span>();
 
-        <span class="kw">let</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">op</span>.<span class="ident">reply</span>();
-        <span class="ident">reply</span>.<span class="ident">data_vectored</span>(<span class="ident">cx</span>, <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">entries</span>).<span class="kw">await</span>
+        <span class="ident">op</span>.<span class="ident">reply_vectored</span>(<span class="ident">cx</span>, <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">entries</span>).<span class="kw">await</span>
     }
 
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">do_mknod</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>(
@@ -563,10 +565,10 @@
                 {
                     <span class="prelude-val">Ok</span>(<span class="ident">inode</span>) <span class="op">=</span><span class="op">&gt;</span> {
                         <span class="kw">let</span> <span class="ident">attr</span> <span class="op">=</span> <span class="ident">inode</span>.<span class="ident">load_attr</span>();
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">op</span>.<span class="ident">reply</span>();
-                        <span class="ident">reply</span>.<span class="ident">entry_valid</span>(<span class="self">self</span>.<span class="ident">entry_valid</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="ident">entry_valid</span>.<span class="number">1</span>);
-                        <span class="ident">reply</span>.<span class="ident">attr_valid</span>(<span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">1</span>);
-                        <span class="ident">reply</span>.<span class="ident">entry</span>(<span class="ident">cx</span>, <span class="ident">attr</span>, <span class="number">0</span>).<span class="kw">await</span>
+                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">entry</span> <span class="op">=</span> <span class="ident">ReplyEntry</span>::<span class="ident">new</span>(<span class="ident">attr</span>);
+                        <span class="ident">entry</span>.<span class="ident">entry_valid</span>(<span class="self">self</span>.<span class="ident">entry_valid</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="ident">entry_valid</span>.<span class="number">1</span>);
+                        <span class="ident">entry</span>.<span class="ident">attr_valid</span>(<span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">1</span>);
+                        <span class="ident">op</span>.<span class="ident">reply</span>(<span class="ident">cx</span>, <span class="ident">entry</span>).<span class="kw">await</span>
                     }
                     <span class="prelude-val">Err</span>(<span class="ident">errno</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">cx</span>.<span class="ident">reply_err</span>(<span class="ident">errno</span>).<span class="kw">await</span>,
                 }
@@ -587,10 +589,10 @@
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">inodes</span>.<span class="ident">insert_dir</span>(<span class="ident">op</span>.<span class="ident">parent</span>(), <span class="ident">op</span>.<span class="ident">name</span>(), <span class="ident">attr</span>).<span class="kw">await</span> {
             <span class="prelude-val">Ok</span>(<span class="ident">inode</span>) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">attr</span> <span class="op">=</span> <span class="ident">inode</span>.<span class="ident">load_attr</span>();
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">op</span>.<span class="ident">reply</span>();
-                <span class="ident">reply</span>.<span class="ident">entry_valid</span>(<span class="self">self</span>.<span class="ident">entry_valid</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="ident">entry_valid</span>.<span class="number">1</span>);
-                <span class="ident">reply</span>.<span class="ident">attr_valid</span>(<span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">1</span>);
-                <span class="ident">reply</span>.<span class="ident">entry</span>(<span class="ident">cx</span>, <span class="ident">attr</span>, <span class="number">0</span>).<span class="kw">await</span>
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">entry</span> <span class="op">=</span> <span class="ident">ReplyEntry</span>::<span class="ident">new</span>(<span class="ident">attr</span>);
+                <span class="ident">entry</span>.<span class="ident">entry_valid</span>(<span class="self">self</span>.<span class="ident">entry_valid</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="ident">entry_valid</span>.<span class="number">1</span>);
+                <span class="ident">entry</span>.<span class="ident">attr_valid</span>(<span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="ident">attr_valid</span>.<span class="number">1</span>);
+                <span class="ident">op</span>.<span class="ident">reply</span>(<span class="ident">cx</span>, <span class="ident">entry</span>).<span class="kw">await</span>
             }
             <span class="prelude-val">Err</span>(<span class="ident">errno</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">cx</span>.<span class="ident">reply_err</span>(<span class="ident">errno</span>).<span class="kw">await</span>,
         }
@@ -617,11 +619,11 @@
             <span class="ident">Operation</span>::<span class="ident">Mknod</span>(<span class="ident">op</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">do_mknod</span>(<span class="ident">cx</span>, <span class="ident">op</span>).<span class="kw">await</span><span class="question-mark">?</span>,
             <span class="ident">Operation</span>::<span class="ident">Mkdir</span>(<span class="ident">op</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">do_mkdir</span>(<span class="ident">cx</span>, <span class="ident">op</span>).<span class="kw">await</span><span class="question-mark">?</span>,
             <span class="ident">Operation</span>::<span class="ident">Unlink</span>(<span class="ident">op</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">inodes</span>.<span class="ident">remove</span>(<span class="ident">op</span>.<span class="ident">parent</span>(), <span class="ident">op</span>.<span class="ident">name</span>()).<span class="kw">await</span> {
-                <span class="prelude-val">Ok</span>(()) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">op</span>.<span class="ident">reply</span>().<span class="ident">ok</span>(<span class="ident">cx</span>).<span class="kw">await</span><span class="question-mark">?</span>,
+                <span class="prelude-val">Ok</span>(()) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">op</span>.<span class="ident">reply</span>(<span class="ident">cx</span>).<span class="kw">await</span><span class="question-mark">?</span>,
                 <span class="prelude-val">Err</span>(<span class="ident">errno</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">cx</span>.<span class="ident">reply_err</span>(<span class="ident">errno</span>).<span class="kw">await</span><span class="question-mark">?</span>,
             },
             <span class="ident">Operation</span>::<span class="ident">Rmdir</span>(<span class="ident">op</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">inodes</span>.<span class="ident">remove</span>(<span class="ident">op</span>.<span class="ident">parent</span>(), <span class="ident">op</span>.<span class="ident">name</span>()).<span class="kw">await</span> {
-                <span class="prelude-val">Ok</span>(()) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">op</span>.<span class="ident">reply</span>().<span class="ident">ok</span>(<span class="ident">cx</span>).<span class="kw">await</span><span class="question-mark">?</span>,
+                <span class="prelude-val">Ok</span>(()) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">op</span>.<span class="ident">reply</span>(<span class="ident">cx</span>).<span class="kw">await</span><span class="question-mark">?</span>,
                 <span class="prelude-val">Err</span>(<span class="ident">errno</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">cx</span>.<span class="ident">reply_err</span>(<span class="ident">errno</span>).<span class="kw">await</span><span class="question-mark">?</span>,
             },
 
