@@ -402,6 +402,11 @@
 <span id="402">402</span>
 <span id="403">403</span>
 <span id="404">404</span>
+<span id="405">405</span>
+<span id="406">406</span>
+<span id="407">407</span>
+<span id="408">408</span>
+<span id="409">409</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="comment">// FIXME: re-enable lints.</span>
 <span class="attribute">#![<span class="ident">allow</span>(
@@ -411,6 +416,15 @@
 )]</span>
 
 <span class="kw">use</span> <span class="kw">crate</span>::{
+    <span class="ident">kernel</span>::{
+        <span class="ident">fuse_init_out</span>, <span class="comment">//</span>
+        <span class="ident">FUSE_KERNEL_MINOR_VERSION</span>,
+        <span class="ident">FUSE_KERNEL_VERSION</span>,
+        <span class="ident">FUSE_MAX_PAGES</span>,
+        <span class="ident">FUSE_MIN_READ_BUFFER</span>,
+        <span class="ident">FUSE_NO_OPENDIR_SUPPORT</span>,
+        <span class="ident">FUSE_NO_OPEN_SUPPORT</span>,
+    },
     <span class="ident">reply</span>::{<span class="ident">as_bytes</span>, <span class="ident">send_msg</span>},
     <span class="ident">request</span>::{<span class="ident">Buffer</span>, <span class="ident">BufferExt</span>, <span class="ident">BytesBuffer</span>, <span class="ident">RequestKind</span>},
     <span class="ident">session</span>::<span class="ident">Session</span>,
@@ -418,10 +432,6 @@
 <span class="kw">use</span> <span class="ident">bitflags</span>::<span class="ident">bitflags</span>;
 <span class="kw">use</span> <span class="ident">futures</span>::<span class="ident">io</span>::{<span class="ident">AsyncRead</span>, <span class="ident">AsyncWrite</span>};
 <span class="kw">use</span> <span class="ident">lazy_static</span>::<span class="ident">lazy_static</span>;
-<span class="kw">use</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::{
-    <span class="ident">fuse_init_out</span>, <span class="ident">FUSE_KERNEL_MINOR_VERSION</span>, <span class="ident">FUSE_KERNEL_VERSION</span>, <span class="ident">FUSE_MAX_PAGES</span>,
-    <span class="ident">FUSE_MIN_READ_BUFFER</span>, <span class="ident">FUSE_NO_OPENDIR_SUPPORT</span>, <span class="ident">FUSE_NO_OPEN_SUPPORT</span>,
-};
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">cmp</span>, <span class="ident">io</span>};
 
 <span class="comment">// The minimum supported ABI minor version by polyfuse.</span>
@@ -594,7 +604,7 @@
                     <span class="ident">init_out</span>.<span class="ident">minor</span> <span class="op">=</span> <span class="ident">cmp</span>::<span class="ident">min</span>(<span class="ident">init_out</span>.<span class="ident">minor</span>, <span class="ident">init_in</span>.<span class="ident">minor</span>);
 
                     <span class="ident">init_out</span>.<span class="ident">flags</span> <span class="op">=</span> (<span class="self">self</span>.<span class="ident">flags</span> <span class="op">&amp;</span> <span class="ident">capable</span>).<span class="ident">bits</span>();
-                    <span class="ident">init_out</span>.<span class="ident">flags</span> <span class="op">|</span><span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_BIG_WRITES</span>; <span class="comment">// the flag was superseded by `max_write`.</span>
+                    <span class="ident">init_out</span>.<span class="ident">flags</span> <span class="op">|</span><span class="op">=</span> <span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_BIG_WRITES</span>; <span class="comment">// the flag was superseded by `max_write`.</span>
 
                     <span class="ident">init_out</span>.<span class="ident">max_readahead</span> <span class="op">=</span> <span class="ident">cmp</span>::<span class="ident">min</span>(<span class="self">self</span>.<span class="ident">max_readahead</span>, <span class="ident">init_in</span>.<span class="ident">max_readahead</span>);
                     <span class="ident">init_out</span>.<span class="ident">max_write</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">max_write</span>;
@@ -733,66 +743,66 @@
         <span class="doccomment">/// The filesystem supports asynchronous read requests.</span>
         <span class="doccomment">///</span>
         <span class="doccomment">/// Enabled by default.</span>
-        <span class="kw">const</span> <span class="ident">ASYNC_READ</span> <span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_ASYNC_READ</span>;
+        <span class="kw">const</span> <span class="ident">ASYNC_READ</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_ASYNC_READ</span>;
 
         <span class="doccomment">/// The filesystem supports the `O_TRUNC` open flag.</span>
         <span class="doccomment">///</span>
         <span class="doccomment">/// Enabled by default.</span>
-        <span class="kw">const</span> <span class="ident">ATOMIC_O_TRUNC</span> <span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_ATOMIC_O_TRUNC</span>;
+        <span class="kw">const</span> <span class="ident">ATOMIC_O_TRUNC</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_ATOMIC_O_TRUNC</span>;
 
         <span class="doccomment">/// The kernel check the validity of attributes on every read.</span>
         <span class="doccomment">///</span>
         <span class="doccomment">/// Enabled by default.</span>
-        <span class="kw">const</span> <span class="ident">AUTO_INVAL_DATA</span> <span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_AUTO_INVAL_DATA</span>;
+        <span class="kw">const</span> <span class="ident">AUTO_INVAL_DATA</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_AUTO_INVAL_DATA</span>;
 
         <span class="doccomment">/// The filesystem supports asynchronous direct I/O submission.</span>
         <span class="doccomment">///</span>
         <span class="doccomment">/// Enabled by default.</span>
-        <span class="kw">const</span> <span class="ident">ASYNC_DIO</span> <span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_ASYNC_DIO</span>;
+        <span class="kw">const</span> <span class="ident">ASYNC_DIO</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_ASYNC_DIO</span>;
 
         <span class="doccomment">/// The kernel supports parallel directory operations.</span>
         <span class="doccomment">///</span>
         <span class="doccomment">/// Enabled by default.</span>
-        <span class="kw">const</span> <span class="ident">PARALLEL_DIROPS</span> <span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_PARALLEL_DIROPS</span>;
+        <span class="kw">const</span> <span class="ident">PARALLEL_DIROPS</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_PARALLEL_DIROPS</span>;
 
         <span class="doccomment">/// The filesystem is responsible for unsetting setuid and setgid bits</span>
         <span class="doccomment">/// when a file is written, truncated, or its owner is changed.</span>
         <span class="doccomment">///</span>
         <span class="doccomment">/// Enabled by default.</span>
-        <span class="kw">const</span> <span class="ident">HANDLE_KILLPRIV</span> <span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_HANDLE_KILLPRIV</span>;
+        <span class="kw">const</span> <span class="ident">HANDLE_KILLPRIV</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_HANDLE_KILLPRIV</span>;
 
         <span class="doccomment">/// The filesystem supports the POSIX-style file lock.</span>
-        <span class="kw">const</span> <span class="ident">POSIX_LOCKS</span> <span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_POSIX_LOCKS</span>;
+        <span class="kw">const</span> <span class="ident">POSIX_LOCKS</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_POSIX_LOCKS</span>;
 
         <span class="doccomment">/// The filesystem supports the `flock` handling.</span>
-        <span class="kw">const</span> <span class="ident">FLOCK_LOCKS</span> <span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_FLOCK_LOCKS</span>;
+        <span class="kw">const</span> <span class="ident">FLOCK_LOCKS</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_FLOCK_LOCKS</span>;
 
         <span class="doccomment">/// The filesystem supports lookups of `&quot;.&quot;` and `&quot;..&quot;`.</span>
-        <span class="kw">const</span> <span class="ident">EXPORT_SUPPORT</span> <span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_EXPORT_SUPPORT</span>;
+        <span class="kw">const</span> <span class="ident">EXPORT_SUPPORT</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_EXPORT_SUPPORT</span>;
 
         <span class="doccomment">/// The kernel should not apply the umask to the file mode on create</span>
         <span class="doccomment">/// operations.</span>
-        <span class="kw">const</span> <span class="ident">DONT_MASK</span> <span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_DONT_MASK</span>;
+        <span class="kw">const</span> <span class="ident">DONT_MASK</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_DONT_MASK</span>;
 
         <span class="doccomment">/// The writeback caching should be enabled.</span>
-        <span class="kw">const</span> <span class="ident">WRITEBACK_CACHE</span> <span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_WRITEBACK_CACHE</span>;
+        <span class="kw">const</span> <span class="ident">WRITEBACK_CACHE</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_WRITEBACK_CACHE</span>;
 
         <span class="doccomment">/// The filesystem supports POSIX access control lists.</span>
-        <span class="kw">const</span> <span class="ident">POSIX_ACL</span> <span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_POSIX_ACL</span>;
+        <span class="kw">const</span> <span class="ident">POSIX_ACL</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_POSIX_ACL</span>;
 
         <span class="doccomment">/// The filesystem supports `readdirplus` operations.</span>
-        <span class="kw">const</span> <span class="ident">READDIRPLUS</span> <span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_DO_READDIRPLUS</span>;
+        <span class="kw">const</span> <span class="ident">READDIRPLUS</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_DO_READDIRPLUS</span>;
 
         <span class="doccomment">/// Indicates that the kernel uses the adaptive readdirplus.</span>
-        <span class="kw">const</span> <span class="ident">READDIRPLUS_AUTO</span> <span class="op">=</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_READDIRPLUS_AUTO</span>;
+        <span class="kw">const</span> <span class="ident">READDIRPLUS_AUTO</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FUSE_READDIRPLUS_AUTO</span>;
 
         <span class="comment">// TODO: splice read/write</span>
-        <span class="comment">// const SPLICE_WRITE = polyfuse_sys::kernel::FUSE_SPLICE_WRITE;</span>
-        <span class="comment">// const SPLICE_MOVE = polyfuse_sys::kernel::FUSE_SPLICE_MOVE;</span>
-        <span class="comment">// const SPLICE_READ = polyfuse_sys::kernel::FUSE_SPLICE_READ;</span>
+        <span class="comment">// const SPLICE_WRITE = crate::kernel::FUSE_SPLICE_WRITE;</span>
+        <span class="comment">// const SPLICE_MOVE = crate::kernel::FUSE_SPLICE_MOVE;</span>
+        <span class="comment">// const SPLICE_READ = crate::kernel::FUSE_SPLICE_READ;</span>
 
         <span class="comment">// TODO: ioctl</span>
-        <span class="comment">// const IOCTL_DIR = polyfuse_sys::kernel::FUSE_IOCTL_DIR;</span>
+        <span class="comment">// const IOCTL_DIR = crate::kernel::FUSE_IOCTL_DIR;</span>
     }
 }
 

@@ -471,25 +471,29 @@
 <span id="471">471</span>
 <span id="472">472</span>
 <span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Replies to the kernel.</span>
 
 <span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">needless_update</span>)]</span>
 
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">common</span>::{<span class="ident">FileAttr</span>, <span class="ident">FileLock</span>, <span class="ident">StatFs</span>};
-<span class="kw">use</span> <span class="ident">futures</span>::{<span class="ident">future</span>::<span class="ident">poll_fn</span>, <span class="ident">io</span>::<span class="ident">AsyncWrite</span>};
-<span class="kw">use</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::{
-    <span class="ident">fuse_attr_out</span>, <span class="comment">//</span>
-    <span class="ident">fuse_bmap_out</span>,
-    <span class="ident">fuse_entry_out</span>,
-    <span class="ident">fuse_getxattr_out</span>,
-    <span class="ident">fuse_lk_out</span>,
-    <span class="ident">fuse_open_out</span>,
-    <span class="ident">fuse_out_header</span>,
-    <span class="ident">fuse_poll_out</span>,
-    <span class="ident">fuse_statfs_out</span>,
-    <span class="ident">fuse_write_out</span>,
+<span class="kw">use</span> <span class="kw">crate</span>::{
+    <span class="ident">common</span>::{<span class="ident">FileAttr</span>, <span class="ident">FileLock</span>, <span class="ident">StatFs</span>},
+    <span class="ident">kernel</span>::{
+        <span class="ident">fuse_attr_out</span>, <span class="comment">//</span>
+        <span class="ident">fuse_bmap_out</span>,
+        <span class="ident">fuse_entry_out</span>,
+        <span class="ident">fuse_getxattr_out</span>,
+        <span class="ident">fuse_lk_out</span>,
+        <span class="ident">fuse_open_out</span>,
+        <span class="ident">fuse_out_header</span>,
+        <span class="ident">fuse_poll_out</span>,
+        <span class="ident">fuse_statfs_out</span>,
+        <span class="ident">fuse_write_out</span>,
+    },
 };
+<span class="kw">use</span> <span class="ident">futures</span>::{<span class="ident">future</span>::<span class="ident">poll_fn</span>, <span class="ident">io</span>::<span class="ident">AsyncWrite</span>};
 <span class="kw">use</span> <span class="ident">smallvec</span>::<span class="ident">SmallVec</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{
     <span class="ident">convert</span>::<span class="ident">TryFrom</span>,
@@ -630,18 +634,18 @@
 
     <span class="doccomment">/// Indicates that the direct I/O is used on this file.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">direct_io</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">enabled</span>: <span class="ident">bool</span>) {
-        <span class="self">self</span>.<span class="ident">set_flag</span>(<span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FOPEN_DIRECT_IO</span>, <span class="ident">enabled</span>);
+        <span class="self">self</span>.<span class="ident">set_flag</span>(<span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FOPEN_DIRECT_IO</span>, <span class="ident">enabled</span>);
     }
 
     <span class="doccomment">/// Indicates that the currently cached file data in the kernel</span>
     <span class="doccomment">/// need not be invalidated.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">keep_cache</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">enabled</span>: <span class="ident">bool</span>) {
-        <span class="self">self</span>.<span class="ident">set_flag</span>(<span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FOPEN_KEEP_CACHE</span>, <span class="ident">enabled</span>);
+        <span class="self">self</span>.<span class="ident">set_flag</span>(<span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FOPEN_KEEP_CACHE</span>, <span class="ident">enabled</span>);
     }
 
     <span class="doccomment">/// Indicates that the opened file is not seekable.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">nonseekable</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">enabled</span>: <span class="ident">bool</span>) {
-        <span class="self">self</span>.<span class="ident">set_flag</span>(<span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FOPEN_NONSEEKABLE</span>, <span class="ident">enabled</span>);
+        <span class="self">self</span>.<span class="ident">set_flag</span>(<span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FOPEN_NONSEEKABLE</span>, <span class="ident">enabled</span>);
     }
 }
 
@@ -710,7 +714,7 @@
 
     <span class="doccomment">/// Enable caching of entries returned by `readdir`.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">cache_dir</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">enabled</span>: <span class="ident">bool</span>) {
-        <span class="self">self</span>.<span class="ident">set_flag</span>(<span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::<span class="ident">FOPEN_CACHE_DIR</span>, <span class="ident">enabled</span>);
+        <span class="self">self</span>.<span class="ident">set_flag</span>(<span class="kw">crate</span>::<span class="ident">kernel</span>::<span class="ident">FOPEN_CACHE_DIR</span>, <span class="ident">enabled</span>);
     }
 }
 

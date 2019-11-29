@@ -320,6 +320,15 @@
 <span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">needless_update</span>)]</span>
 
 <span class="kw">use</span> <span class="kw">crate</span>::{
+    <span class="ident">kernel</span>::{
+        <span class="ident">fuse_notify_code</span>, <span class="comment">//</span>
+        <span class="ident">fuse_notify_delete_out</span>,
+        <span class="ident">fuse_notify_inval_entry_out</span>,
+        <span class="ident">fuse_notify_inval_inode_out</span>,
+        <span class="ident">fuse_notify_poll_wakeup_out</span>,
+        <span class="ident">fuse_notify_retrieve_out</span>,
+        <span class="ident">fuse_notify_store_out</span>,
+    },
     <span class="ident">reply</span>::{<span class="ident">as_bytes</span>, <span class="ident">send_msg</span>},
     <span class="ident">session</span>::<span class="ident">Session</span>,
 };
@@ -328,15 +337,6 @@
     <span class="ident">future</span>::{<span class="ident">Fuse</span>, <span class="ident">FusedFuture</span>, <span class="ident">Future</span>, <span class="ident">FutureExt</span>},
     <span class="ident">io</span>::<span class="ident">AsyncWrite</span>,
     <span class="ident">lock</span>::<span class="ident">Mutex</span>,
-};
-<span class="kw">use</span> <span class="ident">polyfuse_sys</span>::<span class="ident">kernel</span>::{
-    <span class="ident">fuse_notify_code</span>, <span class="comment">//</span>
-    <span class="ident">fuse_notify_delete_out</span>,
-    <span class="ident">fuse_notify_inval_entry_out</span>,
-    <span class="ident">fuse_notify_inval_inode_out</span>,
-    <span class="ident">fuse_notify_poll_wakeup_out</span>,
-    <span class="ident">fuse_notify_retrieve_out</span>,
-    <span class="ident">fuse_notify_store_out</span>,
 };
 <span class="kw">use</span> <span class="ident">smallvec</span>::<span class="ident">SmallVec</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{
