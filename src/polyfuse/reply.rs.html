@@ -473,6 +473,9 @@
 <span id="473">473</span>
 <span id="474">474</span>
 <span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+<span id="478">478</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Replies to the kernel.</span>
 
@@ -555,8 +558,11 @@
 <span class="kw">impl</span> <span class="ident">ReplyEntry</span> {
     <span class="doccomment">/// Create a new `ReplyEntry`.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">attr</span>: <span class="ident">FileAttr</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="kw">let</span> <span class="ident">attr</span> <span class="op">=</span> <span class="ident">attr</span>.<span class="ident">into_inner</span>();
+        <span class="kw">let</span> <span class="ident">nodeid</span> <span class="op">=</span> <span class="ident">attr</span>.<span class="ident">ino</span>;
         <span class="self">Self</span>(<span class="ident">fuse_entry_out</span> {
-            <span class="ident">attr</span>: <span class="ident">attr</span>.<span class="ident">into_inner</span>(),
+            <span class="ident">nodeid</span>,
+            <span class="ident">attr</span>,
             ..<span class="ident">Default</span>::<span class="ident">default</span>()
         })
     }
