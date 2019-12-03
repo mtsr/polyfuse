@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["run","Run a FUSE filesystem daemon mounted onto the specified path."]],"struct":[["Notifier","Notification sender to the kernel."],["Server","FUSE filesystem server."]]});
+initSidebarItems({"fn":[["mount","Run a FUSE filesystem mounted onto the specified path."]],"struct":[["Notifier","Notification sender to the kernel."],["Server","A FUSE filesystem server running on Tokio runtime."]]});

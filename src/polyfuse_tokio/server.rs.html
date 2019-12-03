@@ -190,6 +190,25 @@
 <span id="190">190</span>
 <span id="191">191</span>
 <span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Serve FUSE filesystem.</span>
 
@@ -204,7 +223,7 @@
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">ffi</span>::<span class="ident">OsStr</span>, <span class="ident">io</span>, <span class="ident">path</span>::<span class="ident">Path</span>, <span class="ident">sync</span>::<span class="ident">Arc</span>};
 <span class="kw">use</span> <span class="ident">tokio</span>::<span class="ident">signal</span>::<span class="ident">unix</span>::{<span class="ident">signal</span>, <span class="ident">SignalKind</span>};
 
-<span class="doccomment">/// FUSE filesystem server.</span>
+<span class="doccomment">/// A FUSE filesystem server running on Tokio runtime.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Server</span> {
     <span class="ident">session</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Session</span><span class="op">&gt;</span>,
@@ -253,16 +272,18 @@
         <span class="ident">F</span>: <span class="ident">Filesystem</span><span class="op">&lt;</span><span class="ident">Bytes</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
         <span class="ident">S</span>: <span class="ident">Future</span> <span class="op">+</span> <span class="ident">Unpin</span>,
     {
-        <span class="kw">let</span> <span class="ident">session</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">session</span>;
-        <span class="kw">let</span> <span class="ident">notifier</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">notifier</span>;
+        <span class="kw">let</span> <span class="self">Self</span> {
+            <span class="ident">session</span>,
+            <span class="ident">notifier</span>,
+            <span class="kw-2">mut</span> <span class="ident">channel</span>,
+        } <span class="op">=</span> <span class="self">self</span>;
         <span class="kw">let</span> <span class="ident">fs</span> <span class="op">=</span> <span class="ident">Arc</span>::<span class="ident">new</span>(<span class="ident">fs</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">channel</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">channel</span>;
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sig</span> <span class="op">=</span> <span class="ident">sig</span>.<span class="ident">fuse</span>();
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">main_loop</span> <span class="op">=</span> <span class="ident">Box</span>::<span class="ident">pin</span>(<span class="kw">async</span> <span class="kw">move</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">req</span> <span class="op">=</span> <span class="ident">BytesBuffer</span>::<span class="ident">new</span>(<span class="ident">session</span>.<span class="ident">buffer_size</span>());
             <span class="kw">loop</span> {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">err</span>) <span class="op">=</span> <span class="ident">session</span>.<span class="ident">receive</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">channel</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">req</span>, <span class="kw-2">&amp;</span><span class="ident">notifier</span>).<span class="kw">await</span> {
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">BytesBuffer</span>::<span class="ident">new</span>(<span class="ident">session</span>.<span class="ident">buffer_size</span>());
+                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">err</span>) <span class="op">=</span> <span class="ident">session</span>.<span class="ident">receive</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">channel</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">buf</span>, <span class="kw-2">&amp;</span><span class="ident">notifier</span>).<span class="kw">await</span> {
                     <span class="kw">match</span> <span class="ident">err</span>.<span class="ident">raw_os_error</span>() {
                         <span class="prelude-val">Some</span>(<span class="ident">libc</span>::<span class="ident">ENODEV</span>) <span class="op">=</span><span class="op">&gt;</span> {
                             <span class="ident">tracing</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;connection was closed by the kernel&quot;</span>);
@@ -275,9 +296,8 @@
                 <span class="kw">let</span> <span class="ident">session</span> <span class="op">=</span> <span class="ident">session</span>.<span class="ident">clone</span>();
                 <span class="kw">let</span> <span class="ident">fs</span> <span class="op">=</span> <span class="ident">fs</span>.<span class="ident">clone</span>();
                 <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">writer</span> <span class="op">=</span> <span class="ident">channel</span>.<span class="ident">try_clone</span>()<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">req</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">mem</span>::<span class="ident">replace</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">req</span>, <span class="ident">BytesBuffer</span>::<span class="ident">new</span>(<span class="ident">session</span>.<span class="ident">buffer_size</span>()));
                 <span class="ident">tokio</span>::<span class="ident">spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">session</span>.<span class="ident">process</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">fs</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">req</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">writer</span>).<span class="kw">await</span> {
+                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">session</span>.<span class="ident">process</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">fs</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">buf</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">writer</span>).<span class="kw">await</span> {
                         <span class="ident">tracing</span>::<span class="macro">error</span><span class="macro">!</span>(<span class="string">&quot;error during handling a request: {}&quot;</span>, <span class="ident">e</span>);
                     }
                 });
@@ -285,7 +305,6 @@
         })
         .<span class="ident">fuse</span>();
 
-        <span class="comment">// FIXME: graceful shutdown the background tasks.</span>
         <span class="macro">select</span><span class="macro">!</span> {
             <span class="kw">_</span> <span class="op">=</span> <span class="ident">main_loop</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
             <span class="ident">sig</span> <span class="op">=</span> <span class="ident">sig</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">sig</span>)),
@@ -302,18 +321,33 @@
 }
 
 <span class="kw">impl</span> <span class="ident">Notifier</span> {
+    <span class="doccomment">/// Attempt to make a clone of this instance.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span> {
+            <span class="ident">session</span>: <span class="self">self</span>.<span class="ident">session</span>.<span class="ident">clone</span>(),
+            <span class="ident">notifier</span>: <span class="self">self</span>.<span class="ident">notifier</span>.<span class="ident">clone</span>(),
+            <span class="ident">channel</span>: <span class="self">self</span>.<span class="ident">channel</span>.<span class="ident">try_clone</span>()<span class="question-mark">?</span>,
+        })
+    }
+
+    <span class="doccomment">/// Invalidate the specified range of cache data for an inode.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// When the kernel receives this notification, some requests are queued to read</span>
+    <span class="doccomment">/// the updated data.</span>
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">inval_inode</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">ino</span>: <span class="ident">u64</span>, <span class="ident">off</span>: <span class="ident">i64</span>, <span class="ident">len</span>: <span class="ident">i64</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">notifier</span>
             .<span class="ident">inval_inode</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">channel</span>, <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">session</span>, <span class="ident">ino</span>, <span class="ident">off</span>, <span class="ident">len</span>)
             .<span class="kw">await</span>
     }
 
+    <span class="doccomment">/// Invalidate an entry with the specified name in the directory.</span>
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">inval_entry</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">parent</span>: <span class="ident">u64</span>, <span class="ident">name</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">OsStr</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">notifier</span>
             .<span class="ident">inval_entry</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">channel</span>, <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">session</span>, <span class="ident">parent</span>, <span class="ident">name</span>)
             .<span class="kw">await</span>
     }
 
+    <span class="doccomment">/// Notify that an entry with the specified name has been deleted from the directory.</span>
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">delete</span>(
         <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
         <span class="ident">parent</span>: <span class="ident">u64</span>,
@@ -325,21 +359,25 @@
             .<span class="kw">await</span>
     }
 
+    <span class="doccomment">/// Replace the specified range of cache data with a new value.</span>
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">store</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">ino</span>: <span class="ident">u64</span>, <span class="ident">offset</span>: <span class="ident">u64</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>[<span class="ident">u8</span>]]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">notifier</span>
             .<span class="ident">store</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">channel</span>, <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">session</span>, <span class="ident">ino</span>, <span class="ident">offset</span>, <span class="ident">data</span>)
             .<span class="kw">await</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">retrieve</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">ino</span>: <span class="ident">u64</span>, <span class="ident">offset</span>: <span class="ident">u64</span>, <span class="ident">size</span>: <span class="ident">u32</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">u64</span>, <span class="ident">Bytes</span>)<span class="op">&gt;</span> {
+    <span class="doccomment">/// Retrieve the value of the cache data with the specified range.</span>
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">retrieve</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">ino</span>: <span class="ident">u64</span>, <span class="ident">offset</span>: <span class="ident">u64</span>, <span class="ident">size</span>: <span class="ident">u32</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Bytes</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">handle</span> <span class="op">=</span> <span class="self">self</span>
             .<span class="ident">notifier</span>
             .<span class="ident">retrieve</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">channel</span>, <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">session</span>, <span class="ident">ino</span>, <span class="ident">offset</span>, <span class="ident">size</span>)
             .<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let</span> (<span class="ident">offset</span>, <span class="ident">data</span>) <span class="op">=</span> <span class="ident">handle</span>.<span class="kw">await</span>;
-        <span class="prelude-val">Ok</span>((<span class="ident">offset</span>, <span class="ident">data</span>))
+        <span class="kw">let</span> (<span class="ident">in_offset</span>, <span class="ident">data</span>) <span class="op">=</span> <span class="ident">handle</span>.<span class="kw">await</span>;
+        <span class="macro">debug_assert_eq</span><span class="macro">!</span>(<span class="ident">offset</span>, <span class="ident">in_offset</span>);
+        <span class="prelude-val">Ok</span>(<span class="ident">data</span>)
     }
 
+    <span class="doccomment">/// Notify an I/O readiness.</span>
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">poll_wakeup</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">kh</span>: <span class="ident">u64</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">notifier</span>
             .<span class="ident">poll_wakeup</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">channel</span>, <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">session</span>, <span class="ident">kh</span>)
