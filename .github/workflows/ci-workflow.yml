@@ -21,6 +21,14 @@ jobs:
       with:
         submodules: true
 
+    - uses: actions/cache@v1
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.OS }}-${{ matrix.rust_toolchain }}-cargo-registry
+        restore-keys: |
+          ${{ runner.OS }}-${{ matrix.rust_toolchain }}-cargo-registry-
+          ${{ runner.OS }}-${{ matrix.rust_toolchain }}-
+
     - name: Install APT dependencies
       run: |
         sudo apt-get update -yqq
