@@ -134,6 +134,7 @@ impl ReadDir {
 }
 
 mod imp {
+    use crate::shared_map::SharedMap;
     use indexmap::IndexMap;
     use polyfuse::{DirEntry, FileAttr};
     use std::{
@@ -147,7 +148,7 @@ mod imp {
 
     #[derive(Debug)]
     pub struct Table {
-        nodes: Mutex<HashMap<u64, Arc<Node>>>,
+        nodes: SharedMap<u64, Node>,
         root: Arc<Node>,
         next_ino: AtomicU64,
     }
@@ -158,7 +159,7 @@ mod imp {
             root_attr.set_mode((root_attr.mode() & !libc::S_IFMT) & libc::S_IFDIR);
 
             Self {
-                nodes: Mutex::new(HashMap::new()),
+                nodes: SharedMap::new(),
                 root: Arc::new(Node {
                     nodeid: 1,
                     attr: Mutex::new(root_attr),

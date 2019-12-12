@@ -1,6 +1,7 @@
 #![allow(clippy::unnecessary_mut_passed)]
 #![deny(clippy::unimplemented)]
 
+mod shared_map;
 pub mod table;
 
 pub mod prelude {
@@ -18,6 +19,8 @@ pub mod prelude {
 
     pub use crate as examples;
 }
+
+pub use crate::shared_map::SharedMap;
 
 pub fn get_mountpoint() -> anyhow::Result<std::path::PathBuf> {
     std::env::args()

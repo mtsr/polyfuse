@@ -7,13 +7,15 @@ use polyfuse::{
     FileAttr,
 };
 use polyfuse_examples::prelude::*;
-use polyfuse_examples::table::{Node, NodeTable};
+use polyfuse_examples::{
+    table::{Node, NodeTable},
+    SharedMap,
+};
 use std::{
-    collections::HashMap,
     fs::Metadata,
     io,
     os::linux::fs::MetadataExt,
-    sync::{Arc, Mutex},
+    sync::Arc,
     time::{Duration, SystemTime},
 };
 
@@ -36,7 +38,7 @@ async fn main() -> anyhow::Result<()> {
 /// An in-memory filesystem.
 struct MemFS {
     nodes: NodeTable,
-    files: Mutex<HashMap<u64, Arc<MemFSFile>>>,
+    files: SharedMap<u64, MemFSFile>,
     ttl_entry: Duration,
     ttl_attr: Duration,
 }
@@ -50,7 +52,7 @@ impl MemFS {
 
         Self {
             nodes: NodeTable::new(root_attr),
-            files: Mutex::default(),
+            files: SharedMap::default(),
             ttl_attr: TTL,
             ttl_entry: TTL,
         }
@@ -75,8 +77,7 @@ impl MemFS {
     }
 
     fn get_file(&self, ino: u64) -> Option<Arc<MemFSFile>> {
-        let files = self.files.lock().unwrap();
-        files.get(&ino).cloned()
+        self.files.get(&ino)?.upgrade()
     }
 
     async fn do_lookup<W: ?Sized>(
