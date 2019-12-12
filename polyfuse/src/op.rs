@@ -1,6 +1,7 @@
 //! Filesystem operations.
 
 #![allow(missing_docs)]
+#![warn(unsafe_code)]
 
 use crate::{
     common::{FileLock, Forget},
@@ -44,7 +45,7 @@ use crate::{
     request::RequestHeader,
 };
 use futures::io::AsyncWrite;
-use std::{ffi::OsStr, io, os::unix::ffi::OsStrExt};
+use std::{ffi::OsStr, io};
 
 /// The kind of FUSE requests received from the kernel.
 #[derive(Debug)]
@@ -209,8 +210,7 @@ impl<'a> Lookup<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        let entry = entry.as_ref();
-        cx.reply(unsafe { crate::reply::as_bytes(entry) }).await
+        cx.reply(entry.as_ref()).await
     }
 }
 
@@ -241,8 +241,7 @@ impl<'a> Getattr<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        let attr = attr.as_ref();
-        cx.reply(unsafe { crate::reply::as_bytes(attr) }).await
+        cx.reply(attr.as_ref()).await
     }
 }
 
@@ -322,8 +321,7 @@ impl<'a> Setattr<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        let attr = attr.as_ref();
-        cx.reply(unsafe { crate::reply::as_bytes(attr) }).await
+        cx.reply(attr.as_ref()).await
     }
 }
 
@@ -346,7 +344,7 @@ impl Readlink<'_> {
     where
         W: AsyncWrite + Unpin,
     {
-        cx.reply(value.as_ref().as_bytes()).await
+        cx.reply(value.as_ref()).await
     }
 }
 
@@ -378,8 +376,7 @@ impl<'a> Symlink<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        let entry = entry.as_ref();
-        cx.reply(unsafe { crate::reply::as_bytes(entry) }).await
+        cx.reply(entry.as_ref()).await
     }
 }
 
@@ -419,8 +416,7 @@ impl<'a> Mknod<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        let entry = entry.as_ref();
-        cx.reply(unsafe { crate::reply::as_bytes(entry) }).await
+        cx.reply(entry.as_ref()).await
     }
 }
 
@@ -456,8 +452,7 @@ impl<'a> Mkdir<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        let entry = entry.as_ref();
-        cx.reply(unsafe { crate::reply::as_bytes(entry) }).await
+        cx.reply(entry.as_ref()).await
     }
 }
 
@@ -480,7 +475,7 @@ impl<'a> Unlink<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        cx.reply(&[]).await
+        cx.reply_err(0).await
     }
 }
 
@@ -503,7 +498,7 @@ impl<'a> Rmdir<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        cx.reply(&[]).await
+        cx.reply_err(0).await
     }
 }
 
@@ -564,7 +559,7 @@ impl<'a> Rename<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        cx.reply(&[]).await
+        cx.reply_err(0).await
     }
 }
 
@@ -596,8 +591,7 @@ impl<'a> Link<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        let entry = entry.as_ref();
-        cx.reply(unsafe { crate::reply::as_bytes(entry) }).await
+        cx.reply(entry.as_ref()).await
     }
 }
 
@@ -624,8 +618,7 @@ impl<'a> Open<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        let out = out.as_ref();
-        cx.reply(unsafe { crate::reply::as_bytes(out) }).await
+        cx.reply(out.as_ref()).await
     }
 }
 
@@ -691,7 +684,7 @@ impl<'a> Read<'a> {
     {
         let data_len: usize = data.iter().map(|t| t.len()).sum();
         if data_len <= self.size() as usize {
-            cx.reply_vectored(data).await
+            cx.reply(data).await
         } else {
             cx.reply_err(libc::ERANGE).await
         }
@@ -741,8 +734,7 @@ impl<'a> Write<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        let out = out.as_ref();
-        cx.reply(unsafe { crate::reply::as_bytes(out) }).await
+        cx.reply(out.as_ref()).await
     }
 }
 
@@ -782,7 +774,7 @@ impl<'a> Release<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        cx.reply(&[]).await
+        cx.reply_err(0).await
     }
 }
 
@@ -804,8 +796,7 @@ impl Statfs<'_> {
     where
         W: AsyncWrite + Unpin,
     {
-        let out = out.as_ref();
-        cx.reply(unsafe { crate::reply::as_bytes(out) }).await
+        cx.reply(out.as_ref()).await
     }
 }
 
@@ -832,7 +823,7 @@ impl<'a> Fsync<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        cx.reply(&[]).await
+        cx.reply_err(0).await
     }
 }
 
@@ -865,7 +856,7 @@ impl<'a> Setxattr<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        cx.reply(&[]).await
+        cx.reply_err(0).await
     }
 }
 
@@ -897,8 +888,7 @@ impl<'a> Getxattr<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        let out = out.as_ref();
-        cx.reply(unsafe { crate::reply::as_bytes(out) }).await
+        cx.reply(out.as_ref()).await
     }
 
     pub async fn reply<W: ?Sized>(
@@ -928,7 +918,7 @@ impl<'a> Getxattr<'a> {
     {
         let data_len: usize = data.iter().map(|t| t.len()).sum();
         if data_len <= self.size() as usize {
-            cx.reply_vectored(data).await
+            cx.reply(data).await
         } else {
             cx.reply_err(libc::ERANGE).await
         }
@@ -958,8 +948,7 @@ impl<'a> Listxattr<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        let out = out.as_ref();
-        cx.reply(unsafe { crate::reply::as_bytes(out) }).await
+        cx.reply(out.as_ref()).await
     }
 
     pub async fn reply<W: ?Sized>(
@@ -989,7 +978,7 @@ impl<'a> Listxattr<'a> {
     {
         let data_len: usize = data.iter().map(|t| t.len()).sum();
         if data_len <= self.size() as usize {
-            cx.reply_vectored(data).await
+            cx.reply(data).await
         } else {
             cx.reply_err(libc::ERANGE).await
         }
@@ -1014,7 +1003,7 @@ impl<'a> Removexattr<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        cx.reply(&[]).await
+        cx.reply_err(0).await
     }
 }
 
@@ -1041,7 +1030,7 @@ impl<'a> Flush<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        cx.reply(&[]).await
+        cx.reply_err(0).await
     }
 }
 
@@ -1068,8 +1057,7 @@ impl<'a> Opendir<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        let out = out.as_ref();
-        cx.reply(unsafe { crate::reply::as_bytes(out) }).await
+        cx.reply(out.as_ref()).await
     }
 }
 
@@ -1134,7 +1122,7 @@ impl<'a> Readdir<'a> {
     {
         let data_len: usize = data.iter().map(|t| t.len()).sum();
         if data_len <= self.size() as usize {
-            cx.reply_vectored(data).await
+            cx.reply(data).await
         } else {
             cx.reply_err(libc::ERANGE).await
         }
@@ -1164,7 +1152,7 @@ impl<'a> Releasedir<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        cx.reply(&[]).await
+        cx.reply_err(0).await
     }
 }
 
@@ -1191,7 +1179,7 @@ impl<'a> Fsyncdir<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        cx.reply(&[]).await
+        cx.reply_err(0).await
     }
 }
 
@@ -1226,8 +1214,7 @@ impl<'a> Getlk<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        let out = out.as_ref();
-        cx.reply(unsafe { crate::reply::as_bytes(out) }).await
+        cx.reply(out.as_ref()).await
     }
 }
 
@@ -1263,7 +1250,7 @@ impl<'a> Setlk<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        cx.reply(&[]).await
+        cx.reply_err(0).await
     }
 }
 
@@ -1310,7 +1297,7 @@ impl<'a> Flock<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        cx.reply(&[]).await
+        cx.reply_err(0).await
     }
 }
 
@@ -1333,7 +1320,7 @@ impl<'a> Access<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        cx.reply(&[]).await
+        cx.reply_err(0).await
     }
 }
 
@@ -1374,12 +1361,7 @@ impl<'a> Create<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        let entry = entry.as_ref();
-        let open = open.as_ref();
-        cx.reply_vectored(&[unsafe { crate::reply::as_bytes(entry) }, unsafe {
-            crate::reply::as_bytes(open)
-        }])
-        .await
+        cx.reply(&(entry.as_ref(), open.as_ref())).await
     }
 }
 
@@ -1410,8 +1392,7 @@ impl<'a> Bmap<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        let out = out.as_ref();
-        cx.reply(unsafe { crate::reply::as_bytes(out) }).await
+        cx.reply(out.as_ref()).await
     }
 }
 
@@ -1446,7 +1427,7 @@ impl<'a> Fallocate<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        cx.reply(&[]).await
+        cx.reply_err(0).await
     }
 }
 
@@ -1481,8 +1462,7 @@ impl<'a> CopyFileRange<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        let out = out.as_ref();
-        cx.reply(unsafe { crate::reply::as_bytes(out) }).await
+        cx.reply(out.as_ref()).await
     }
 }
 
@@ -1521,7 +1501,6 @@ impl<'a> Poll<'a> {
     where
         W: AsyncWrite + Unpin,
     {
-        let out = out.as_ref();
-        cx.reply(unsafe { crate::reply::as_bytes(out) }).await
+        cx.reply(out.as_ref()).await
     }
 }

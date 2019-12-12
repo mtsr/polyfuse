@@ -348,7 +348,7 @@ impl Session {
                     st.set_namelen(255);
                     st.set_bsize(512);
                     let out = crate::reply::ReplyStatfs::new(st);
-                    cx.reply(unsafe { crate::reply::as_bytes(&out) }).await?;
+                    cx.reply(&out).await?;
                 }
                 _ => cx.reply_err(libc::ENOSYS).await?,
             }

@@ -21,14 +21,111 @@ use futures::{future::poll_fn, io::AsyncWrite};
 use smallvec::SmallVec;
 use std::{
     convert::TryFrom,
+    ffi::OsStr,
     io::{self, IoSlice},
     mem,
+    os::unix::ffi::OsStrExt,
     pin::Pin,
 };
 
-#[inline(always)]
-pub(crate) unsafe fn as_bytes<T: Sized>(t: &T) -> &[u8] {
-    std::slice::from_raw_parts(t as *const T as *const u8, std::mem::size_of::<T>())
+pub(crate) trait Reply {
+    fn count(&self) -> usize;
+    fn extend<'a>(&'a self, vec: &mut Vec<&'a [u8]>);
+}
+
+impl Reply for [u8] {
+    #[inline]
+    fn count(&self) -> usize {
+        1
+    }
+
+    #[inline]
+    fn extend<'a>(&'a self, vec: &mut Vec<&'a [u8]>) {
+        vec.push(self);
+    }
+}
+
+impl Reply for OsStr {
+    #[inline]
+    fn count(&self) -> usize {
+        1
+    }
+
+    #[inline]
+    fn extend<'a>(&'a self, vec: &mut Vec<&'a [u8]>) {
+        vec.push(self.as_bytes());
+    }
+}
+
+impl Reply for [&'_ [u8]] {
+    #[inline]
+    fn count(&self) -> usize {
+        self.len()
+    }
+
+    #[inline]
+    fn extend<'a>(&'a self, vec: &mut Vec<&'a [u8]>) {
+        vec.extend_from_slice(self);
+    }
+}
+
+impl<T: ?Sized> Reply for &T
+where
+    T: Reply,
+{
+    #[inline]
+    fn count(&self) -> usize {
+        (**self).count()
+    }
+
+    #[inline]
+    fn extend<'a>(&'a self, vec: &mut Vec<&'a [u8]>) {
+        (**self).extend(vec);
+    }
+}
+
+impl<T, U> Reply for (T, U)
+where
+    T: Reply,
+    U: Reply,
+{
+    #[inline]
+    fn count(&self) -> usize {
+        self.0.count() + self.1.count()
+    }
+
+    #[inline]
+    fn extend<'a>(&'a self, vec: &mut Vec<&'a [u8]>) {
+        self.0.extend(vec);
+        self.1.extend(vec);
+    }
+}
+
+macro_rules! impl_reply {
+    ($($t:ty),*$(,)?) => {$(
+        impl Reply for $t {
+            #[inline]
+            fn count(&self) -> usize { 1 }
+
+            #[inline]
+            fn extend<'a>(&'a self, vec: &mut Vec<&'a [u8]>) {
+                vec.push(unsafe { as_bytes(self) });
+            }
+        }
+    )*};
+}
+
+impl_reply! {
+    ReplyAttr,
+    ReplyEntry,
+    ReplyOpen,
+    ReplyWrite,
+    ReplyOpendir,
+    ReplyStatfs,
+    ReplyXattr,
+    ReplyLk,
+    ReplyBmap,
+    ReplyPoll,
 }
 
 /// Reply with the inode attributes.
@@ -378,6 +475,11 @@ impl ReplyPoll {
     pub fn revents(&mut self, revents: u32) {
         self.0.revents = revents;
     }
+}
+
+#[inline(always)]
+pub(crate) unsafe fn as_bytes<T: Sized>(t: &T) -> &[u8] {
+    std::slice::from_raw_parts(t as *const T as *const u8, std::mem::size_of::<T>())
 }
 
 pub(crate) async fn send_msg<W: ?Sized>(

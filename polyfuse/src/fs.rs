@@ -4,6 +4,7 @@ use crate::{
     async_trait,
     op::Operation,
     reply::send_msg,
+    reply::Reply,
     request::RequestHeader,
     session::{Interrupt, Session},
 };
@@ -48,20 +49,15 @@ impl<'a, W: ?Sized> Context<'a, W> {
     }
 
     #[inline]
-    pub(crate) async fn reply(&mut self, data: &[u8]) -> io::Result<()>
+    pub(crate) async fn reply<T: ?Sized>(&mut self, reply: &T) -> io::Result<()>
     where
-        W: AsyncWrite + Unpin,
-    {
-        self.reply_vectored(&[data]).await
-    }
-
-    #[inline]
-    pub(crate) async fn reply_vectored(&mut self, data: &[&[u8]]) -> io::Result<()>
-    where
+        T: Reply,
         W: AsyncWrite + Unpin,
     {
         if let Some(ref mut writer) = self.writer.take() {
-            send_msg(writer, self.header.unique(), 0, data).await?;
+            let mut data = Vec::with_capacity(reply.count());
+            reply.extend(&mut data);
+            send_msg(writer, self.header.unique(), 0, &data[..]).await?;
         }
         Ok(())
     }
