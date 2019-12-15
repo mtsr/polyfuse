@@ -7,6 +7,7 @@ use crate::{
     kernel::{fuse_forget_one, fuse_opcode},
     notify::Notifier,
     op::{self, Operation},
+    reply::ReplyWriter,
     request::{Buffer, BufferExt, RequestKind},
 };
 use futures::{
@@ -148,11 +149,12 @@ impl Session {
             header.opcode(),
         );
 
-        let mut cx = Context::new(&header, &mut writer, &*self);
+        let mut cx = Context::new(&header, &*self);
+        let mut writer = ReplyWriter::new(header.unique(), &mut writer);
 
         macro_rules! run_op {
             ($op:expr) => {
-                fs.call(&mut cx, $op).await?;
+                fs.call(&mut cx, &mut writer, $op).await?;
             };
         }
 
@@ -167,7 +169,11 @@ impl Session {
             RequestKind::Forget { arg } => {
                 // no reply.
                 return fs
-                    .call(&mut cx, Operation::Forget(&[Forget::new(ino, arg.nlookup)]))
+                    .call(
+                        &mut cx,
+                        &mut writer,
+                        Operation::Forget(&[Forget::new(ino, arg.nlookup)]),
+                    )
                     .await;
             }
             RequestKind::BatchForget { forgets, .. } => {
@@ -183,7 +189,11 @@ impl Session {
 
                 // no reply.
                 return fs
-                    .call(&mut cx, Operation::Forget(make_forgets(&*forgets)))
+                    .call(
+                        &mut cx,
+                        &mut writer,
+                        Operation::Forget(make_forgets(&*forgets)),
+                    )
                     .await;
             }
             RequestKind::Getattr { arg } => {
@@ -325,7 +335,7 @@ impl Session {
 
             RequestKind::Init { .. } => {
                 tracing::warn!("ignore an INIT request after initializing the session");
-                cx.reply_err(libc::EIO).await?;
+                writer.reply_err(libc::EIO).await?;
             }
 
             RequestKind::Interrupt { .. } | RequestKind::NotifyReply { .. } => {
@@ -337,20 +347,22 @@ impl Session {
 
             RequestKind::Unknown => {
                 tracing::warn!("unsupported opcode: {:?}", header.opcode());
-                cx.reply_err(libc::ENOSYS).await?;
+                writer.reply_err(libc::ENOSYS).await?;
             }
         }
 
-        if !cx.is_replied() {
+        if !writer.written() {
             match header.opcode() {
                 Some(fuse_opcode::FUSE_STATFS) => {
                     let mut st = StatFs::default();
                     st.set_namelen(255);
                     st.set_bsize(512);
                     let out = crate::reply::ReplyStatfs::new(st);
-                    cx.reply(unsafe { crate::reply::as_bytes(&out) }).await?;
+                    writer
+                        .reply(unsafe { crate::reply::as_bytes(&out) })
+                        .await?;
                 }
-                _ => cx.reply_err(libc::ENOSYS).await?,
+                _ => writer.reply_err(libc::ENOSYS).await?,
             }
         }
 
