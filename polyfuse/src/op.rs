@@ -49,18 +49,18 @@ use std::{ffi::OsStr, io, os::unix::ffi::OsStrExt};
 /// The kind of FUSE requests received from the kernel.
 #[derive(Debug)]
 #[allow(missing_docs)]
-pub enum Operation<'a, T> {
+pub enum Operation<'a, 'w, T, W: ?Sized> {
     /// Look up a directory entry by name.
-    Lookup(Lookup<'a>),
+    Lookup(Lookup<'a, 'w, W>),
 
     /// Get file attributes.
-    Getattr(Getattr<'a>),
+    Getattr(Getattr<'a, 'w, W>),
 
     /// Set file attributes.
-    Setattr(Setattr<'a>),
+    Setattr(Setattr<'a, 'w, W>),
 
     /// Read a symbolic link.
-    Readlink(Readlink<'a>),
+    Readlink(Readlink<'a, 'w, W>),
 
     /// Create a symbolic link
     Symlink(Symlink<'a>),
@@ -184,12 +184,13 @@ pub enum Operation<'a, T> {
 // Ioctl
 
 #[derive(Debug)]
-pub struct Lookup<'a> {
+pub struct Lookup<'a, 'w, W: ?Sized> {
     pub(crate) header: &'a RequestHeader,
     pub(crate) name: &'a OsStr,
+    pub(crate) writer: &'a mut ReplyWriter<'w, W>,
 }
 
-impl<'a> Lookup<'a> {
+impl<W: ?Sized> Lookup<'_, '_, W> {
     pub fn parent(&self) -> u64 {
         self.header.nodeid()
     }
@@ -198,26 +199,25 @@ impl<'a> Lookup<'a> {
         self.name
     }
 
-    pub async fn reply<W: ?Sized>(
-        self,
-        writer: &mut ReplyWriter<'_, W>,
-        entry: impl AsRef<ReplyEntry>,
-    ) -> io::Result<()>
+    pub async fn reply(self, entry: impl AsRef<ReplyEntry>) -> io::Result<()>
     where
         W: AsyncWrite + Unpin,
     {
         let entry = entry.as_ref();
-        writer.reply(unsafe { crate::reply::as_bytes(entry) }).await
+        self.writer
+            .reply(unsafe { crate::reply::as_bytes(entry) })
+            .await
     }
 }
 
 #[derive(Debug)]
-pub struct Getattr<'a> {
+pub struct Getattr<'a, 'w, W: ?Sized> {
     pub(crate) header: &'a RequestHeader,
     pub(crate) arg: &'a fuse_getattr_in,
+    pub(crate) writer: &'a mut ReplyWriter<'w, W>,
 }
 
-impl<'a> Getattr<'a> {
+impl<W: ?Sized> Getattr<'_, '_, W> {
     pub fn ino(&self) -> u64 {
         self.header.nodeid()
     }
@@ -230,26 +230,25 @@ impl<'a> Getattr<'a> {
         }
     }
 
-    pub async fn reply<W: ?Sized>(
-        self,
-        writer: &mut ReplyWriter<'_, W>,
-        attr: impl AsRef<ReplyAttr>,
-    ) -> io::Result<()>
+    pub async fn reply(self, attr: impl AsRef<ReplyAttr>) -> io::Result<()>
     where
         W: AsyncWrite + Unpin,
     {
         let attr = attr.as_ref();
-        writer.reply(unsafe { crate::reply::as_bytes(attr) }).await
+        self.writer
+            .reply(unsafe { crate::reply::as_bytes(attr) })
+            .await
     }
 }
 
 #[derive(Debug)]
-pub struct Setattr<'a> {
+pub struct Setattr<'a, 'w, W: ?Sized> {
     pub(crate) header: &'a RequestHeader,
     pub(crate) arg: &'a fuse_setattr_in,
+    pub(crate) writer: &'a mut ReplyWriter<'w, W>,
 }
 
-impl<'a> Setattr<'a> {
+impl<W: ?Sized> Setattr<'_, '_, W> {
     pub fn ino(&self) -> u64 {
         self.header.nodeid()
     }
@@ -311,50 +310,46 @@ impl<'a> Setattr<'a> {
         self.get(crate::kernel::FATTR_LOCKOWNER, |arg| arg.lock_owner)
     }
 
-    pub async fn reply<W: ?Sized>(
-        self,
-        writer: &mut ReplyWriter<'_, W>,
-        attr: impl AsRef<ReplyAttr>,
-    ) -> io::Result<()>
+    pub async fn reply(self, attr: impl AsRef<ReplyAttr>) -> io::Result<()>
     where
         W: AsyncWrite + Unpin,
     {
         let attr = attr.as_ref();
-        writer.reply(unsafe { crate::reply::as_bytes(attr) }).await
+        self.writer
+            .reply(unsafe { crate::reply::as_bytes(attr) })
+            .await
     }
 }
 
 #[derive(Debug)]
-pub struct Readlink<'a> {
+pub struct Readlink<'a, 'w, W: ?Sized> {
     pub(crate) header: &'a RequestHeader,
+    pub(crate) writer: &'a mut ReplyWriter<'w, W>,
 }
 
-impl Readlink<'_> {
+impl<W: ?Sized> Readlink<'_, '_, W> {
     pub fn ino(&self) -> u64 {
         self.header.nodeid()
     }
 
     /// Reply to the kernel with the specified link value.
-    pub async fn reply<W: ?Sized>(
-        self,
-        writer: &mut ReplyWriter<'_, W>,
-        value: impl AsRef<OsStr>,
-    ) -> io::Result<()>
+    pub async fn reply(self, value: impl AsRef<OsStr>) -> io::Result<()>
     where
         W: AsyncWrite + Unpin,
     {
-        writer.reply(value.as_ref().as_bytes()).await
+        self.writer.reply(value.as_ref().as_bytes()).await
     }
 }
 
 #[derive(Debug)]
-pub struct Symlink<'a> {
+pub struct Symlink<'a, 'w, W: ?Sized> {
     pub(crate) header: &'a RequestHeader,
     pub(crate) name: &'a OsStr,
     pub(crate) link: &'a OsStr,
+    pub(crate) writer: &'a mut ReplyWriter<'w, W>,
 }
 
-impl<'a> Symlink<'a> {
+impl<W: ?Sized> Symlink<'_, '_, W> {
     pub fn parent(&self) -> u64 {
         self.header.nodeid()
     }
@@ -367,27 +362,26 @@ impl<'a> Symlink<'a> {
         &*self.link
     }
 
-    pub async fn reply<W: ?Sized>(
-        self,
-        writer: &mut ReplyWriter<'_, W>,
-        entry: impl AsRef<ReplyEntry>,
-    ) -> io::Result<()>
+    pub async fn reply(self, entry: impl AsRef<ReplyEntry>) -> io::Result<()>
     where
         W: AsyncWrite + Unpin,
     {
         let entry = entry.as_ref();
-        writer.reply(unsafe { crate::reply::as_bytes(entry) }).await
+        self.writer
+            .reply(unsafe { crate::reply::as_bytes(entry) })
+            .await
     }
 }
 
 #[derive(Debug)]
-pub struct Mknod<'a> {
+pub struct Mknod<'a, 'w, W: ?Sized> {
     pub(crate) header: &'a RequestHeader,
     pub(crate) arg: &'a fuse_mknod_in,
     pub(crate) name: &'a OsStr,
+    pub(crate) writer: &'a mut ReplyWriter<'w, W>,
 }
 
-impl<'a> Mknod<'a> {
+impl<W: ?Sized> Mknod<'_, '_, W> {
     pub fn parent(&self) -> u64 {
         self.header.nodeid()
     }
@@ -408,16 +402,14 @@ impl<'a> Mknod<'a> {
         self.arg.umask
     }
 
-    pub async fn reply<W: ?Sized>(
-        self,
-        writer: &mut ReplyWriter<'_, W>,
-        entry: impl AsRef<ReplyEntry>,
-    ) -> io::Result<()>
+    pub async fn reply(self, entry: impl AsRef<ReplyEntry>) -> io::Result<()>
     where
         W: AsyncWrite + Unpin,
     {
         let entry = entry.as_ref();
-        writer.reply(unsafe { crate::reply::as_bytes(entry) }).await
+        self.writer
+            .reply(unsafe { crate::reply::as_bytes(entry) })
+            .await
     }
 }
 

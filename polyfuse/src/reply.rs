@@ -33,7 +33,7 @@ pub(crate) unsafe fn as_bytes<T: Sized>(t: &T) -> &[u8] {
 }
 
 #[allow(missing_docs)]
-pub struct ReplyWriter<'w, W: ?Sized> {
+pub(crate) struct ReplyWriter<'w, W: ?Sized> {
     unique: u64,
     writer: Option<&'w mut W>,
 }

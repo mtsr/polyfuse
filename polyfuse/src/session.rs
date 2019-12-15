@@ -152,7 +152,7 @@ impl Session {
 
         macro_rules! run_op {
             ($op:expr) => {
-                fs.reply(&mut cx, &mut writer, $op).await?;
+                fs.reply(&mut cx, $op).await?;
             };
         }
 
@@ -162,7 +162,11 @@ impl Session {
                 return Ok(());
             }
             RequestKind::Lookup { name } => {
-                run_op!(Operation::Lookup(op::Lookup { header, name }));
+                run_op!(Operation::Lookup(op::Lookup {
+                    header,
+                    name,
+                    writer: &mut writer,
+                }));
             }
             RequestKind::Forget { arg } => {
                 // no reply.
@@ -183,7 +187,11 @@ impl Session {
                 return fs.forget(&mut cx, make_forgets(&*forgets)).await;
             }
             RequestKind::Getattr { arg } => {
-                run_op!(Operation::Getattr(op::Getattr { header, arg }));
+                run_op!(Operation::Getattr(op::Getattr {
+                    header,
+                    arg,
+                    writer: &mut writer
+                }));
             }
             RequestKind::Setattr { arg } => {
                 run_op!(Operation::Setattr(op::Setattr { header, arg }));

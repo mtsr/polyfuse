@@ -4,7 +4,6 @@ use crate::{
     async_trait,
     common::Forget,
     op::Operation,
-    reply::ReplyWriter,
     request::RequestHeader,
     session::{Interrupt, Session},
 };
@@ -64,12 +63,7 @@ pub trait Filesystem<T, W: ?Sized>: Sync {
 
     /// Handle a FUSE request and reply its result to the kernel.
     #[allow(unused_variables)]
-    async fn reply(
-        &self,
-        cx: &mut Context<'_>,
-        writer: &mut ReplyWriter<'_, W>,
-        op: Operation<'_, T>,
-    ) -> io::Result<()>
+    async fn reply(&self, cx: &mut Context<'_>, op: Operation<'_, '_, T, W>) -> io::Result<()>
     where
         T: Send + 'async_trait,
         W: Send + 'async_trait,
@@ -100,11 +94,10 @@ where
     }
 
     #[inline]
-    fn reply<'l1, 'l2, 'l3, 'l4, 'l5, 'l6, 'async_trait>(
+    fn reply<'l1, 'l2, 'l3, 'l4, 'l5, 'async_trait>(
         &'l1 self,
         cx: &'l2 mut Context<'l3>,
-        writer: &'l4 mut ReplyWriter<'l5, W>,
-        op: Operation<'l6, T>,
+        op: Operation<'l4, 'l5, T, W>,
     ) -> Pin<Box<dyn Future<Output = io::Result<()>> + Send + 'async_trait>>
     where
         'l1: 'async_trait,
@@ -112,11 +105,10 @@ where
         'l3: 'async_trait,
         'l4: 'async_trait,
         'l5: 'async_trait,
-        'l6: 'async_trait,
         T: Send + 'async_trait,
         W: Send + 'async_trait,
     {
-        (**self).reply(cx, writer, op)
+        (**self).reply(cx, op)
     }
 }
 
@@ -142,11 +134,10 @@ where
     }
 
     #[inline]
-    fn reply<'l1, 'l2, 'l3, 'l4, 'l5, 'l6, 'async_trait>(
+    fn reply<'l1, 'l2, 'l3, 'l4, 'l5, 'async_trait>(
         &'l1 self,
         cx: &'l2 mut Context<'l3>,
-        writer: &'l4 mut ReplyWriter<'l5, W>,
-        op: Operation<'l6, T>,
+        op: Operation<'l4, 'l5, T, W>,
     ) -> Pin<Box<dyn Future<Output = io::Result<()>> + Send + 'async_trait>>
     where
         'l1: 'async_trait,
@@ -154,11 +145,10 @@ where
         'l3: 'async_trait,
         'l4: 'async_trait,
         'l5: 'async_trait,
-        'l6: 'async_trait,
         T: Send + 'async_trait,
         W: Send + 'async_trait,
     {
-        (**self).reply(cx, writer, op)
+        (**self).reply(cx, op)
     }
 }
 
@@ -184,11 +174,10 @@ where
     }
 
     #[inline]
-    fn reply<'l1, 'l2, 'l3, 'l4, 'l5, 'l6, 'async_trait>(
+    fn reply<'l1, 'l2, 'l3, 'l4, 'l5, 'async_trait>(
         &'l1 self,
         cx: &'l2 mut Context<'l3>,
-        writer: &'l4 mut ReplyWriter<'l5, W>,
-        op: Operation<'l6, T>,
+        op: Operation<'l4, 'l5, T, W>,
     ) -> Pin<Box<dyn Future<Output = io::Result<()>> + Send + 'async_trait>>
     where
         'l1: 'async_trait,
@@ -196,10 +185,9 @@ where
         'l3: 'async_trait,
         'l4: 'async_trait,
         'l5: 'async_trait,
-        'l6: 'async_trait,
         T: Send + 'async_trait,
         W: Send + 'async_trait,
     {
-        (**self).reply(cx, writer, op)
+        (**self).reply(cx, op)
     }
 }
