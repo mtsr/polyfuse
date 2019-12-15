@@ -134,8 +134,11 @@ impl Hello {
 }
 
 #[async_trait]
-impl<T> Filesystem<T> for Hello {
-    async fn call<W: ?Sized>(
+impl<T, W: ?Sized> Filesystem<T, W> for Hello
+where
+    W: AsyncWrite + Unpin,
+{
+    async fn reply(
         &self,
         cx: &mut Context<'_>,
         writer: &mut ReplyWriter<'_, W>,
@@ -143,7 +146,7 @@ impl<T> Filesystem<T> for Hello {
     ) -> io::Result<()>
     where
         T: Send + 'async_trait,
-        W: AsyncWrite + Unpin + Send,
+        W: Send + 'async_trait,
     {
         match op {
             Operation::Lookup(op) => match self.lookup(op.parent(), op.name()) {

@@ -144,8 +144,11 @@ impl Heartbeat {
 }
 
 #[async_trait]
-impl<T> Filesystem<T> for Heartbeat {
-    async fn call<W: ?Sized>(
+impl<T, W: ?Sized> Filesystem<T, W> for Heartbeat
+where
+    W: AsyncWrite + Unpin,
+{
+    async fn reply(
         &self,
         _: &mut Context<'_>,
         writer: &mut ReplyWriter<'_, W>,
@@ -153,7 +156,7 @@ impl<T> Filesystem<T> for Heartbeat {
     ) -> io::Result<()>
     where
         T: Send + 'async_trait,
-        W: AsyncWrite + Unpin + Send,
+        W: Send + 'async_trait,
     {
         match op {
             Operation::Getattr(op) => match op.ino() {

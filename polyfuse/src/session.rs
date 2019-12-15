@@ -129,13 +129,11 @@ impl Session {
         writer: &mut W,
     ) -> io::Result<()>
     where
-        F: Filesystem<B::Data>,
+        F: Filesystem<B::Data, W>,
         W: AsyncWrite + Send + Unpin,
         B: Buffer,
         B::Data: Send,
     {
-        let mut writer = writer;
-
         if self.exited() {
             tracing::warn!("The sesson has already been exited");
             return Ok(());
@@ -150,11 +148,11 @@ impl Session {
         );
 
         let mut cx = Context::new(&header, &*self);
-        let mut writer = ReplyWriter::new(header.unique(), &mut writer);
+        let mut writer = ReplyWriter::new(header.unique(), &mut *writer);
 
         macro_rules! run_op {
             ($op:expr) => {
-                fs.call(&mut cx, &mut writer, $op).await?;
+                fs.reply(&mut cx, &mut writer, $op).await?;
             };
         }
 
@@ -168,13 +166,7 @@ impl Session {
             }
             RequestKind::Forget { arg } => {
                 // no reply.
-                return fs
-                    .call(
-                        &mut cx,
-                        &mut writer,
-                        Operation::Forget(&[Forget::new(ino, arg.nlookup)]),
-                    )
-                    .await;
+                return fs.forget(&mut cx, &[Forget::new(ino, arg.nlookup)]).await;
             }
             RequestKind::BatchForget { forgets, .. } => {
                 #[inline(always)]
@@ -188,13 +180,7 @@ impl Session {
                 }
 
                 // no reply.
-                return fs
-                    .call(
-                        &mut cx,
-                        &mut writer,
-                        Operation::Forget(make_forgets(&*forgets)),
-                    )
-                    .await;
+                return fs.forget(&mut cx, make_forgets(&*forgets)).await;
             }
             RequestKind::Getattr { arg } => {
                 run_op!(Operation::Getattr(op::Getattr { header, arg }));

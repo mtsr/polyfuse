@@ -288,18 +288,19 @@ impl MemFS {
 }
 
 #[async_trait]
-impl<T> Filesystem<T> for MemFS
+impl<T, W: ?Sized> Filesystem<T, W> for MemFS
 where
     T: AsRef<[u8]>,
+    W: AsyncWrite + Unpin,
 {
-    async fn call<W: ?Sized>(
+    async fn reply(
         &self,
         cx: &mut Context<'_>,
         writer: &mut ReplyWriter<'_, W>,
         op: Operation<'_, T>,
     ) -> io::Result<()>
     where
-        W: AsyncWrite + Send + Unpin + 'async_trait,
+        W: Send + 'async_trait,
         T: Send + 'async_trait,
     {
         match op {
